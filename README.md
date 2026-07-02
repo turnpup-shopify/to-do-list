@@ -9,15 +9,22 @@ your browser's `localStorage`.
 - **Multiple lists** — organize tasks into as many lists as you like, switch
   instantly from the sidebar (each shows its open-task count).
 - **Minimal rows** — compact one-line rows with a checkbox to check things off.
+- **Modern glass UI** — frosted, translucent panels with rounded corners over a
+  soft gradient; light & dark themes follow your system.
+- **Drag-and-drop reordering** — grab the handle (`⠿`) on any row to reorder
+  tasks within a list. Order is persisted.
 - **Task details** — click any row to expand it. Each task stores:
   - a **created date** and a **completed date** (set automatically when checked),
+  - an optional **due date** (overdue dates are highlighted in the row),
   - an optional **description** where any `http(s)` links are auto-clickable,
   - **tags** (comma/space separated) for organizing.
+- **Tags with smart suggestions** — a set of default tags is suggested as
+  one-click chips when tagging a task. Edit that default set anytime from the
+  **hamburger menu** (☰) in the sidebar.
 - **Tag filtering** — click tag chips above a list to filter to tasks matching
   all selected tags. Toggle completed tasks in/out of view.
 - **Auto-cleanup** — tasks completed more than **30 days** ago are automatically
   deleted on load, so the app stays lean.
-- **Light & dark** — follows your system color scheme.
 
 ## Getting started
 
@@ -41,8 +48,8 @@ or a real backend later:
 
 | Layer | File(s) | Responsibility |
 | --- | --- | --- |
-| **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `AppData`). |
-| **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, the 30-day purge, tag parsing). No React, no storage — trivially testable and reusable. |
+| **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `Settings`, `AppData`). |
+| **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the 30-day purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
 | **Persistence** | `src/lib/repository.ts` | A small async `Repository` interface with a `localStorage` implementation. |
 | **State** | `src/lib/useStore.ts` | A React hook wiring operations to the repository. |
 | **UI** | `src/App.tsx`, `src/components/*` | Presentation only. |

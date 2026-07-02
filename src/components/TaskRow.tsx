@@ -1,17 +1,38 @@
 import { useState } from "react";
 import type { Task } from "../types";
 import { parseTags } from "../lib/operations";
-import { formatDateTime } from "../lib/format";
+import { formatDateTime, formatDueDate, isOverdue } from "../lib/format";
 import { Linkify } from "./Linkify";
 
 interface Props {
   task: Task;
+  /** Suggested tags (defaults + already-used) to offer for quick tagging. */
+  suggestions: string[];
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
   onDelete: (id: string) => void;
+  // Drag-and-drop reordering.
+  isDragging: boolean;
+  isDragOver: boolean;
+  onDragStart: (id: string) => void;
+  onDragEnter: (id: string) => void;
+  onDrop: (id: string) => void;
+  onDragEnd: () => void;
 }
 
-export function TaskRow({ task, onToggle, onUpdate, onDelete }: Props) {
+export function TaskRow({
+  task,
+  suggestions,
+  onToggle,
+  onUpdate,
+  onDelete,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragEnter,
+  onDrop,
+  onDragEnd,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
   // Raw tag text is edited locally and parsed into clean tags on blur.
   const [tagText, setTagText] = useState(task.tags.join(", "));
@@ -22,9 +43,43 @@ export function TaskRow({ task, onToggle, onUpdate, onDelete }: Props) {
     onUpdate(task.id, { tags: parsed });
   };
 
+  const addSuggested = (tag: string) => {
+    if (task.tags.includes(tag)) return;
+    const next = [...task.tags, tag];
+    setTagText(next.join(", "));
+    onUpdate(task.id, { tags: next });
+  };
+
+  const unusedSuggestions = suggestions.filter((t) => !task.tags.includes(t));
+  const overdue = isOverdue(task.dueDate) && !task.completed;
+
+  const className = [
+    "task",
+    task.completed ? "task--done" : "",
+    isDragging ? "task--dragging" : "",
+    isDragOver ? "task--dragover" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <li className={`task ${task.completed ? "task--done" : ""}`}>
+    <li
+      className={className}
+      onDragOver={(e) => e.preventDefault()}
+      onDragEnter={() => onDragEnter(task.id)}
+      onDrop={() => onDrop(task.id)}
+    >
       <div className="task__row">
+        <span
+          className="task__grip"
+          draggable
+          onDragStart={() => onDragStart(task.id)}
+          onDragEnd={onDragEnd}
+          aria-label="Drag to reorder"
+          title="Drag to reorder"
+        >
+          ⠿
+        </span>
         <input
           type="checkbox"
           className="task__check"
@@ -49,6 +104,11 @@ export function TaskRow({ task, onToggle, onUpdate, onDelete }: Props) {
             </span>
           )}
         </button>
+        {task.dueDate && (
+          <span className={`due ${overdue ? "due--overdue" : ""}`} title="Due date">
+            {formatDueDate(task.dueDate)}
+          </span>
+        )}
         <span className="task__chevron" aria-hidden>
           {expanded ? "▾" : "▸"}
         </span>
@@ -62,6 +122,15 @@ export function TaskRow({ task, onToggle, onUpdate, onDelete }: Props) {
               type="text"
               value={task.title}
               onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+            />
+          </label>
+
+          <label className="field">
+            <span className="field__label">Due date</span>
+            <input
+              type="date"
+              value={task.dueDate ?? ""}
+              onChange={(e) => onUpdate(task.id, { dueDate: e.target.value || null })}
             />
           </label>
 
@@ -93,6 +162,20 @@ export function TaskRow({ task, onToggle, onUpdate, onDelete }: Props) {
               }}
             />
           </label>
+          {unusedSuggestions.length > 0 && (
+            <div className="suggestions">
+              {unusedSuggestions.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="chip chip--add"
+                  onClick={() => addSuggested(tag)}
+                >
+                  + {tag}
+                </button>
+              ))}
+            </div>
+          )}
 
           <dl className="meta">
             <div>

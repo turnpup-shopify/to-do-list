@@ -15,6 +15,8 @@ export interface Task {
   createdAt: string;
   /** ISO-8601 timestamp of when it was checked off, or null while open. */
   completedAt: string | null;
+  /** Optional due date as a YYYY-MM-DD string, or null if none. */
+  dueDate: string | null;
 }
 
 export interface List {
@@ -23,10 +25,26 @@ export interface List {
   createdAt: string;
 }
 
+/** User-adjustable app settings. */
+export interface Settings {
+  /** Suggested tags offered when tagging tasks; editable from the menu. */
+  defaultTags: string[];
+}
+
 /** The complete, serializable application state. */
 export interface AppData {
   lists: List[];
   tasks: Task[];
+  settings: Settings;
 }
 
-export const emptyAppData = (): AppData => ({ lists: [], tasks: [] });
+/** Tags seeded on first run; fully editable afterwards. */
+export const SEED_DEFAULT_TAGS = ["work", "personal", "urgent", "errand", "idea"];
+
+export const emptySettings = (): Settings => ({ defaultTags: [...SEED_DEFAULT_TAGS] });
+
+export const emptyAppData = (): AppData => ({
+  lists: [],
+  tasks: [],
+  settings: emptySettings(),
+});

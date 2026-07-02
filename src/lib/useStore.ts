@@ -45,6 +45,10 @@ export function useStore(repository: Repository = defaultRepository) {
         setData((d) => ops.updateTask(d, id, patch)),
       toggleTask: (id: string) => setData((d) => ops.toggleTask(d, id)),
       deleteTask: (id: string) => setData((d) => ops.deleteTask(d, id)),
+      reorderTasks: (draggedId: string, targetId: string) =>
+        setData((d) => ops.reorderTasks(d, draggedId, targetId)),
+      addDefaultTag: (tag: string) => setData((d) => ops.addDefaultTag(d, tag)),
+      removeDefaultTag: (tag: string) => setData((d) => ops.removeDefaultTag(d, tag)),
     }),
     [],
   );
