@@ -3,6 +3,7 @@ import { useStore } from "./lib/useStore";
 import { collectTags } from "./lib/operations";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
+import { SettingsMenu } from "./components/SettingsMenu";
 
 export default function App() {
   const { data, loaded, actions } = useStore();
@@ -11,6 +12,11 @@ export default function App() {
   const [newTask, setNewTask] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [showCompleted, setShowCompleted] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Drag-and-drop reordering state.
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // Keep a valid list selected as lists are added/removed.
   useEffect(() => {
@@ -27,6 +33,13 @@ export default function App() {
   );
 
   const availableTags = useMemo(() => collectTags(listTasks), [listTasks]);
+
+  // Tags offered as quick-add suggestions: defaults first, then any others in use.
+  const suggestions = useMemo(() => {
+    const merged = [...data.settings.defaultTags];
+    for (const t of availableTags) if (!merged.includes(t)) merged.push(t);
+    return merged;
+  }, [data.settings.defaultTags, availableTags]);
 
   // Drop any active tag filters that no longer exist in the current list.
   useEffect(() => {
@@ -60,6 +73,12 @@ export default function App() {
     }
   };
 
+  const handleDrop = (targetId: string) => {
+    if (draggedId && draggedId !== targetId) actions.reorderTasks(draggedId, targetId);
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
   if (!loaded) {
     return <div className="app app--loading">Loading…</div>;
   }
@@ -72,6 +91,7 @@ export default function App() {
         activeListId={activeListId}
         onSelect={setActiveListId}
         onAddList={(name) => actions.addList(name)}
+        onOpenMenu={() => setMenuOpen(true)}
       />
 
       <main className="main">
@@ -97,7 +117,7 @@ export default function App() {
                 onChange={(e) => setNewTask(e.target.value)}
                 autoFocus
               />
-              <button type="submit" className="btn">
+              <button type="submit" className="btn btn--primary">
                 Add
               </button>
             </form>
@@ -131,9 +151,19 @@ export default function App() {
                   <TaskRow
                     key={task.id}
                     task={task}
+                    suggestions={suggestions}
                     onToggle={actions.toggleTask}
                     onUpdate={actions.updateTask}
                     onDelete={actions.deleteTask}
+                    isDragging={draggedId === task.id}
+                    isDragOver={dragOverId === task.id && draggedId !== task.id}
+                    onDragStart={setDraggedId}
+                    onDragEnter={setDragOverId}
+                    onDrop={handleDrop}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDragOverId(null);
+                    }}
                   />
                 ))}
               </ul>
@@ -149,6 +179,14 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <SettingsMenu
+        open={menuOpen}
+        defaultTags={data.settings.defaultTags}
+        onAdd={(tag) => actions.addDefaultTag(tag)}
+        onRemove={(tag) => actions.removeDefaultTag(tag)}
+        onClose={() => setMenuOpen(false)}
+      />
     </div>
   );
 }

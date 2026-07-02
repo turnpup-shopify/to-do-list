@@ -7,9 +7,10 @@ interface Props {
   activeListId: string | null;
   onSelect: (id: string) => void;
   onAddList: (name: string) => void;
+  onOpenMenu: () => void;
 }
 
-export function Sidebar({ lists, tasks, activeListId, onSelect, onAddList }: Props) {
+export function Sidebar({ lists, tasks, activeListId, onSelect, onAddList, onOpenMenu }: Props) {
   const [name, setName] = useState("");
 
   const submit = (e: React.FormEvent) => {
@@ -24,7 +25,18 @@ export function Sidebar({ lists, tasks, activeListId, onSelect, onAddList }: Pro
 
   return (
     <aside className="sidebar">
-      <h1 className="sidebar__brand">Lists</h1>
+      <div className="sidebar__top">
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={onOpenMenu}
+          aria-label="Open menu"
+          title="Menu"
+        >
+          ☰
+        </button>
+        <h1 className="sidebar__brand">Lists</h1>
+      </div>
       <nav className="sidebar__nav">
         {lists.map((list) => (
           <button

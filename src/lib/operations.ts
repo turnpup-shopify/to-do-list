@@ -64,6 +64,7 @@ export function renameList(data: AppData, listId: string, name: string): AppData
 /** Delete a list and every task belonging to it. */
 export function deleteList(data: AppData, listId: string): AppData {
   return {
+    ...data,
     lists: data.lists.filter((l) => l.id !== listId),
     tasks: data.tasks.filter((t) => t.listId !== listId),
   };
@@ -86,8 +87,47 @@ export function addTask(
     completed: false,
     createdAt: new Date(now).toISOString(),
     completedAt: null,
+    dueDate: null,
   };
   return { ...data, tasks: [task, ...data.tasks] };
+}
+
+/**
+ * Move the dragged task to sit immediately before the target task in the
+ * global array. Both are expected to belong to the same list; because display
+ * order is derived by filtering the array per-list, moving before the target
+ * yields the correct relative order regardless of other lists' interleaved
+ * entries.
+ */
+export function reorderTasks(data: AppData, draggedId: string, targetId: string): AppData {
+  if (draggedId === targetId) return data;
+  const tasks = [...data.tasks];
+  const from = tasks.findIndex((t) => t.id === draggedId);
+  if (from === -1) return data;
+  const [moved] = tasks.splice(from, 1);
+  const to = tasks.findIndex((t) => t.id === targetId);
+  if (to === -1) return data;
+  tasks.splice(to, 0, moved);
+  return { ...data, tasks };
+}
+
+export function addDefaultTag(data: AppData, raw: string): AppData {
+  const tag = normalizeTag(raw);
+  if (!tag || data.settings.defaultTags.includes(tag)) return data;
+  return {
+    ...data,
+    settings: { ...data.settings, defaultTags: [...data.settings.defaultTags, tag] },
+  };
+}
+
+export function removeDefaultTag(data: AppData, tag: string): AppData {
+  return {
+    ...data,
+    settings: {
+      ...data.settings,
+      defaultTags: data.settings.defaultTags.filter((t) => t !== tag),
+    },
+  };
 }
 
 export function updateTask(
