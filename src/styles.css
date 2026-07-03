@@ -94,6 +94,13 @@ textarea {
   color: var(--text-dim);
 }
 
+/* Mobile-only chrome — hidden on desktop, revealed in the media query below. */
+.mobile-bar,
+.sidebar__close,
+.scrim {
+  display: none;
+}
+
 /* Shared frosted-glass surface. */
 .sidebar,
 .main,
@@ -726,5 +733,93 @@ textarea:focus {
   from {
     transform: translateX(-16px);
     opacity: 0;
+  }
+}
+
+/* ---------- Mobile / narrow screens ---------- */
+@media (max-width: 767px) {
+  .app {
+    grid-template-columns: 1fr;
+    padding: 10px;
+    gap: 0;
+  }
+
+  /* Sidebar becomes a slide-in drawer over the content. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 82vw;
+    max-width: 300px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    z-index: 60;
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+
+  .sidebar__close {
+    display: inline-grid;
+    margin-left: auto;
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 25, 0.5);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 55;
+    animation: fade-in 0.15s ease;
+  }
+
+  .mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .mobile-bar__title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+
+  .main {
+    padding: 14px 16px;
+  }
+
+  .main__title {
+    font-size: 20px;
+  }
+
+  /* Larger, finger-friendly tap targets. */
+  .task__row {
+    padding: 11px 6px;
+  }
+
+  .list-item {
+    padding: 12px;
+  }
+
+  .task__check {
+    width: 20px;
+    height: 20px;
+  }
+
+  .panel {
+    width: 88vw;
+  }
+
+  .meta {
+    gap: 20px;
   }
 }

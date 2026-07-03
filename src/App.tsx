@@ -86,6 +86,7 @@ function TodoApp({
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [showCompleted, setShowCompleted] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile lists drawer
 
   // Drag-and-drop reordering state.
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -156,6 +157,8 @@ function TodoApp({
 
   return (
     <div className="app">
+      {sidebarOpen && <div className="scrim" onClick={() => setSidebarOpen(false)} />}
+
       <Sidebar
         lists={data.lists}
         tasks={data.tasks}
@@ -163,9 +166,25 @@ function TodoApp({
         onSelect={setActiveListId}
         onAddList={(name) => actions.addList(name)}
         onOpenMenu={() => setMenuOpen(true)}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="main">
+        {/* Mobile-only top bar: opens the lists drawer. */}
+        <div className="mobile-bar">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open lists"
+            title="Lists"
+          >
+            ☰
+          </button>
+          <span className="mobile-bar__title">To-Do</span>
+        </div>
+
         {error && <div className="banner banner--warn">{error}</div>}
 
         {activeList ? (
