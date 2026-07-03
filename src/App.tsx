@@ -1,12 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./lib/useStore";
+import { HttpRepository, type Repository } from "./lib/repository";
 import { collectTags } from "./lib/operations";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
 import { SettingsMenu } from "./components/SettingsMenu";
+import { PassphraseGate } from "./components/PassphraseGate";
 
+const PASSPHRASE_KEY = "to-do-list/passphrase";
+
+/**
+ * Top level: gate on a passphrase, then run the app against a backend-backed
+ * repository. The passphrase is remembered per device in localStorage.
+ */
 export default function App() {
-  const { data, loaded, actions } = useStore();
+  const [passphrase, setPassphrase] = useState<string | null>(() =>
+    localStorage.getItem(PASSPHRASE_KEY),
+  );
+
+  const repository = useMemo(
+    () => (passphrase ? new HttpRepository(passphrase) : null),
+    [passphrase],
+  );
+
+  const authenticate = (pass: string) => {
+    localStorage.setItem(PASSPHRASE_KEY, pass);
+    setPassphrase(pass);
+  };
+
+  const signOut = () => {
+    localStorage.removeItem(PASSPHRASE_KEY);
+    setPassphrase(null);
+  };
+
+  if (!repository) {
+    return <PassphraseGate onAuthenticated={authenticate} />;
+  }
+
+  return <TodoApp repository={repository} onSignOut={signOut} />;
+}
+
+function TodoApp({ repository, onSignOut }: { repository: Repository; onSignOut: () => void }) {
+  // A rejected passphrase (e.g. changed on the server) drops back to the gate.
+  const { data, loaded, error, actions } = useStore(repository, { onUnauthorized: onSignOut });
 
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState("");
@@ -34,14 +70,12 @@ export default function App() {
 
   const availableTags = useMemo(() => collectTags(listTasks), [listTasks]);
 
-  // Tags offered as quick-add suggestions: defaults first, then any others in use.
   const suggestions = useMemo(() => {
     const merged = [...data.settings.defaultTags];
     for (const t of availableTags) if (!merged.includes(t)) merged.push(t);
     return merged;
   }, [data.settings.defaultTags, availableTags]);
 
-  // Drop any active tag filters that no longer exist in the current list.
   useEffect(() => {
     setActiveTags((tags) => tags.filter((t) => availableTags.includes(t)));
   }, [availableTags]);
@@ -80,7 +114,7 @@ export default function App() {
   };
 
   if (!loaded) {
-    return <div className="app app--loading">Loading…</div>;
+    return <div className="app app--loading">{error ?? "Loading…"}</div>;
   }
 
   return (
@@ -95,6 +129,8 @@ export default function App() {
       />
 
       <main className="main">
+        {error && <div className="banner banner--warn">{error}</div>}
+
         {activeList ? (
           <>
             <header className="main__header">
@@ -186,6 +222,7 @@ export default function App() {
         onAdd={(tag) => actions.addDefaultTag(tag)}
         onRemove={(tag) => actions.removeDefaultTag(tag)}
         onClose={() => setMenuOpen(false)}
+        onSignOut={onSignOut}
       />
     </div>
   );

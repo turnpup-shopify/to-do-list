@@ -1,38 +1,68 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppData, Task } from "../types";
 import { emptyAppData } from "../types";
-import { LocalStorageRepository, type Repository } from "./repository";
+import { UnauthorizedError, type Repository } from "./repository";
 import * as ops from "./operations";
 
-const defaultRepository = new LocalStorageRepository();
+/** Delay before persisting a change, so bursts of edits collapse into one save. */
+const SAVE_DEBOUNCE_MS = 700;
+
+interface Options {
+  /** Called when the backend rejects the passphrase (on load or save). */
+  onUnauthorized?: () => void;
+}
 
 /**
  * Central application state hook. Loads once from the repository (running the
- * 30-day purge on the way in), then persists the whole snapshot on every change.
- * All mutations go through the pure helpers in operations.ts.
+ * 30-day purge on the way in), then persists the whole snapshot on every change
+ * — debounced, since the repository may be a remote endpoint. All mutations go
+ * through the pure helpers in operations.ts.
  */
-export function useStore(repository: Repository = defaultRepository) {
+export function useStore(repository: Repository, opts: Options = {}) {
   const [data, setData] = useState<AppData>(emptyAppData);
   const [loaded, setLoaded] = useState(false);
-  const repoRef = useRef(repository);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initial load + purge of stale completed tasks.
+  const repoRef = useRef(repository);
+  repoRef.current = repository;
+  const onUnauthorizedRef = useRef(opts.onUnauthorized);
+  onUnauthorizedRef.current = opts.onUnauthorized;
+
+  // Load (and re-load if the repository instance changes, e.g. new passphrase).
   useEffect(() => {
     let cancelled = false;
-    repoRef.current.load().then((loadedData) => {
-      if (cancelled) return;
-      setData(ops.purgeOldCompleted(loadedData));
-      setLoaded(true);
-    });
+    setLoaded(false);
+    repository
+      .load()
+      .then((loadedData) => {
+        if (cancelled) return;
+        setData(ops.purgeOldCompleted(loadedData));
+        setError(null);
+        setLoaded(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof UnauthorizedError) onUnauthorizedRef.current?.();
+        else setError("Couldn't load your data — check your connection.");
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [repository]);
 
-  // Persist whenever state changes (after the initial load has completed).
+  // Persist changes after the initial load, debounced.
   useEffect(() => {
     if (!loaded) return;
-    void repoRef.current.save(data);
+    const id = setTimeout(() => {
+      repoRef.current.save(data).then(
+        () => setError(null),
+        (err) => {
+          if (err instanceof UnauthorizedError) onUnauthorizedRef.current?.();
+          else setError("Couldn't sync — will retry on your next change.");
+        },
+      );
+    }, SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(id);
   }, [data, loaded]);
 
   const actions = useMemo(
@@ -55,5 +85,5 @@ export function useStore(repository: Repository = defaultRepository) {
 
   const purge = useCallback(() => setData((d) => ops.purgeOldCompleted(d)), []);
 
-  return { data, loaded, actions, purge };
+  return { data, loaded, error, actions, purge };
 }

@@ -653,6 +653,69 @@ textarea:focus {
   min-width: 0;
 }
 
+/* ---------- Sync banner ---------- */
+.banner {
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+}
+
+.banner--warn {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---------- Passphrase gate ---------- */
+.gate {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.gate__card {
+  width: 320px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px 24px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.gate__title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.gate__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gate__input {
+  margin-top: 4px;
+}
+
+.gate__error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.gate__btn {
+  margin-top: 4px;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
