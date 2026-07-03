@@ -8,9 +8,22 @@ interface Props {
   onSelect: (id: string) => void;
   onAddList: (name: string) => void;
   onOpenMenu: () => void;
+  /** Mobile: whether the sidebar drawer is open. Ignored on desktop. */
+  isOpen: boolean;
+  /** Mobile: close the drawer (e.g. after picking a list). */
+  onClose: () => void;
 }
 
-export function Sidebar({ lists, tasks, activeListId, onSelect, onAddList, onOpenMenu }: Props) {
+export function Sidebar({
+  lists,
+  tasks,
+  activeListId,
+  onSelect,
+  onAddList,
+  onOpenMenu,
+  isOpen,
+  onClose,
+}: Props) {
   const [name, setName] = useState("");
 
   const submit = (e: React.FormEvent) => {
@@ -20,22 +33,36 @@ export function Sidebar({ lists, tasks, activeListId, onSelect, onAddList, onOpe
     setName("");
   };
 
+  const select = (id: string) => {
+    onSelect(id);
+    onClose(); // no-op on desktop; closes the drawer on mobile
+  };
+
   const openCount = (listId: string) =>
     tasks.filter((t) => t.listId === listId && !t.completed).length;
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
       <div className="sidebar__top">
         <button
           type="button"
           className="icon-btn"
           onClick={onOpenMenu}
-          aria-label="Open menu"
-          title="Menu"
+          aria-label="Settings"
+          title="Settings"
         >
-          ☰
+          ⚙
         </button>
         <h1 className="sidebar__brand">Lists</h1>
+        <button
+          type="button"
+          className="icon-btn sidebar__close"
+          onClick={onClose}
+          aria-label="Close lists"
+          title="Close"
+        >
+          ✕
+        </button>
       </div>
       <nav className="sidebar__nav">
         {lists.map((list) => (
@@ -43,7 +70,7 @@ export function Sidebar({ lists, tasks, activeListId, onSelect, onAddList, onOpe
             key={list.id}
             type="button"
             className={`list-item ${list.id === activeListId ? "list-item--active" : ""}`}
-            onClick={() => onSelect(list.id)}
+            onClick={() => select(list.id)}
           >
             <span className="list-item__name">{list.name}</span>
             <span className="list-item__count">{openCount(list.id) || ""}</span>
