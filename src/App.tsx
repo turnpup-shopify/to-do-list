@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./lib/useStore";
-import { HttpRepository, type Repository } from "./lib/repository";
+import { HttpRepository, verifyPassphrase, type Repository } from "./lib/repository";
 import { collectTags } from "./lib/operations";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
@@ -12,14 +12,36 @@ const PASSPHRASE_KEY = "to-do-list/passphrase";
 /**
  * Top level: gate on a passphrase, then run the app against a backend-backed
  * repository. The passphrase is remembered per device in localStorage.
+ *
+ * `passphrase` distinguishes three states:
+ *   null  — not authenticated (show the gate, once we've confirmed one is needed)
+ *   ""    — server has no passphrase configured; the app is open, no gate
+ *   "…"   — authenticated with a real passphrase
  */
 export default function App() {
   const [passphrase, setPassphrase] = useState<string | null>(() =>
     localStorage.getItem(PASSPHRASE_KEY),
   );
+  // Only probe when we don't already have a stored passphrase.
+  const [checking, setChecking] = useState(() => localStorage.getItem(PASSPHRASE_KEY) === null);
+
+  // If nothing is stored, ask the backend whether a passphrase is required at
+  // all: an unauthenticated request succeeds only when the app is left open.
+  useEffect(() => {
+    if (!checking) return;
+    let cancelled = false;
+    verifyPassphrase("").then((open) => {
+      if (cancelled) return;
+      if (open) setPassphrase(""); // no passphrase configured → skip the gate
+      setChecking(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [checking]);
 
   const repository = useMemo(
-    () => (passphrase ? new HttpRepository(passphrase) : null),
+    () => (passphrase !== null ? new HttpRepository(passphrase) : null),
     [passphrase],
   );
 
@@ -31,16 +53,31 @@ export default function App() {
   const signOut = () => {
     localStorage.removeItem(PASSPHRASE_KEY);
     setPassphrase(null);
+    setChecking(true); // re-probe (also handles the app being open)
   };
+
+  if (checking) {
+    return <div className="app app--loading">Loading…</div>;
+  }
 
   if (!repository) {
     return <PassphraseGate onAuthenticated={authenticate} />;
   }
 
-  return <TodoApp repository={repository} onSignOut={signOut} />;
+  return (
+    <TodoApp repository={repository} onSignOut={signOut} canSignOut={passphrase !== ""} />
+  );
 }
 
-function TodoApp({ repository, onSignOut }: { repository: Repository; onSignOut: () => void }) {
+function TodoApp({
+  repository,
+  onSignOut,
+  canSignOut,
+}: {
+  repository: Repository;
+  onSignOut: () => void;
+  canSignOut: boolean;
+}) {
   // A rejected passphrase (e.g. changed on the server) drops back to the gate.
   const { data, loaded, error, actions } = useStore(repository, { onUnauthorized: onSignOut });
 
@@ -223,6 +260,7 @@ function TodoApp({ repository, onSignOut }: { repository: Repository; onSignOut:
         onRemove={(tag) => actions.removeDefaultTag(tag)}
         onClose={() => setMenuOpen(false)}
         onSignOut={onSignOut}
+        canSignOut={canSignOut}
       />
     </div>
   );

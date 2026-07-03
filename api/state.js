@@ -14,6 +14,16 @@ import { Redis } from "@upstash/redis";
 
 const KEY = "todo-app/state";
 
+// Values that mean "no passphrase — leave the app open". Also covers unset/empty.
+const DISABLED = new Set(["", "none", "false", "null"]);
+
+/** Whether a passphrase is actually required, given the APP_PASSPHRASE env var. */
+function authRequired() {
+  const p = process.env.APP_PASSPHRASE;
+  if (p === undefined || p === null) return false;
+  return !DISABLED.has(p.trim().toLowerCase());
+}
+
 function getRedis() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -30,14 +40,14 @@ function safeEqual(a, b) {
 }
 
 export default async function handler(req, res) {
-  const expected = process.env.APP_PASSPHRASE;
-  if (!expected) {
-    return res.status(500).json({ error: "Server not configured: set the APP_PASSPHRASE env var." });
-  }
-
-  const provided = req.headers["x-app-passphrase"];
-  if (!safeEqual(typeof provided === "string" ? provided : "", expected)) {
-    return res.status(401).json({ error: "unauthorized" });
+  // When a passphrase is configured, require a matching one; otherwise the app
+  // is left open (APP_PASSPHRASE set to none/false/null, or simply unset).
+  if (authRequired()) {
+    const expected = process.env.APP_PASSPHRASE;
+    const provided = req.headers["x-app-passphrase"];
+    if (!safeEqual(typeof provided === "string" ? provided : "", expected)) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
   }
 
   const redis = getRedis();
