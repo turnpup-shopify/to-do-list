@@ -1,11 +1,13 @@
 # To-Do
 
-A minimal, fast, multi-list to-do app. Built with React + TypeScript + Vite,
-it runs as a standalone static web app with **no backend** — all data lives in
-your browser's `localStorage`.
+A minimal, fast, multi-list to-do app built with React + TypeScript + Vite.
+Data syncs **across devices** through a tiny serverless backend (Vercel + a
+Redis KV store), gated by a single shared passphrase.
 
 ## Features
 
+- **Cross-device sync** — your lists live in a cloud KV store and follow you to
+  any browser/device. Unlock with a shared passphrase.
 - **Multiple lists** — organize tasks into as many lists as you like, switch
   instantly from the sidebar (each shows its open-task count).
 - **Minimal rows** — compact one-line rows with a checkbox to check things off.
@@ -26,45 +28,66 @@ your browser's `localStorage`.
 - **Auto-cleanup** — tasks completed more than **30 days** ago are automatically
   deleted on load, so the app stays lean.
 
-## Getting started
+## Deploying to Vercel (one-time setup)
+
+The app is a Vite static frontend plus one serverless function (`api/state.js`).
+Vercel builds and hosts both, and auto-deploys on every push to `main`.
+
+1. **Import the repo into Vercel** — New Project → import this GitHub repo.
+   Vercel auto-detects Vite (build `npm run build`, output `dist/`). No config
+   needed.
+2. **Add a KV store** — in the project's **Storage** tab, create an
+   **Upstash for Redis** (KV) store and connect it to the project. This injects
+   `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
+3. **Set the passphrase** — Project → **Settings → Environment Variables** →
+   add `APP_PASSPHRASE` = a secret only you know.
+4. **Redeploy** (Deployments → ⋯ → Redeploy) so the new env vars take effect.
+
+Open the deployment, enter your passphrase, and you're in. Enter the same
+passphrase on any other device to see the same lists.
+
+> Security note: the KV credentials live only in the serverless function's
+> environment — they're never sent to the browser. The browser only holds the
+> passphrase, which is checked server-side on every request over HTTPS. Writes
+> are last-write-wins, which is fine for a single user editing one device at a
+> time.
+
+## Local development
 
 ```bash
 npm install
-npm run dev       # start the dev server (http://localhost:5173)
 npm run build     # type-check + produce a static build in dist/
-npm run preview   # serve the production build locally
 ```
 
-### Deploying
-
-`npm run build` emits a fully static site to `dist/`. It uses a **relative
-base path**, so you can host it anywhere — Netlify, Vercel, GitHub Pages, S3,
-or any static file server — including from a subpath, with no configuration.
+For a live backend locally, run `vercel dev` (needs the Vercel CLI and the env
+vars above). Plain `npm run dev` serves the UI, but calls to `/api/state` only
+work where the function is running (i.e. on Vercel or under `vercel dev`).
 
 ## Architecture — built to be portable
 
-The code is deliberately layered so it's easy to move to a different framework
-or a real backend later:
+The code is deliberately layered so it's easy to swap storage or even frameworks:
 
 | Layer | File(s) | Responsibility |
 | --- | --- | --- |
 | **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `Settings`, `AppData`). |
 | **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the 30-day purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
-| **Persistence** | `src/lib/repository.ts` | A small async `Repository` interface with a `localStorage` implementation. |
-| **State** | `src/lib/useStore.ts` | A React hook wiring operations to the repository. |
-| **UI** | `src/App.tsx`, `src/components/*` | Presentation only. |
+| **Persistence** | `src/lib/repository.ts` | A small async `Repository` interface with two implementations: `HttpRepository` (the backend) and `LocalStorageRepository` (offline/standalone). |
+| **Backend** | `api/state.js` | Serverless `GET`/`PUT` of the whole state blob to Redis, guarded by the passphrase. |
+| **State** | `src/lib/useStore.ts` | A React hook wiring operations to the repository, with debounced saves. |
+| **UI** | `src/App.tsx`, `src/components/*` | Presentation only (incl. the passphrase gate). |
 
-**Moving to another storage backend** (REST/GraphQL API, SQLite, a file, …):
+**Swapping storage** (a different DB, REST/GraphQL API, SQLite, a file, …):
 implement the `Repository` interface — `load(): Promise<AppData>` and
-`save(data): Promise<void>` — and pass your instance to `useStore()`. Nothing
-above the persistence layer changes.
+`save(data): Promise<void>` — and pass your instance into `useStore()`. Nothing
+above the persistence layer changes. (Want a purely offline build with no
+backend? Use the included `LocalStorageRepository`.)
 
-**Moving to another UI framework**: the domain types and `operations.ts` are
-plain TypeScript with no dependencies, so they port as-is; only the components
-need rewriting.
+**Swapping UI framework**: the domain types and `operations.ts` are plain
+TypeScript with no dependencies, so they port as-is; only the components need
+rewriting.
 
 ## Data
 
-All state is serialized under the `to-do-list/v1` key in `localStorage`. It's a
-single JSON object (`{ lists, tasks }`), so it's easy to export, back up, or
-migrate.
+State is a single JSON object (`{ lists, tasks, settings }`) stored under one
+key in the KV store, so it's easy to export, back up, or migrate. The loader
+migrates older shapes forward, so data keeps working across versions.

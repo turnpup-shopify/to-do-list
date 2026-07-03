@@ -6,10 +6,21 @@ interface Props {
   onAdd: (tag: string) => void;
   onRemove: (tag: string) => void;
   onClose: () => void;
+  onSignOut: () => void;
+  /** Hidden when the deployment has no passphrase (nothing to sign out of). */
+  canSignOut: boolean;
 }
 
-/** Slide-in panel for adjusting the list of suggested default tags. */
-export function SettingsMenu({ open, defaultTags, onAdd, onRemove, onClose }: Props) {
+/** Slide-in panel for adjusting default tags and signing out. */
+export function SettingsMenu({
+  open,
+  defaultTags,
+  onAdd,
+  onRemove,
+  onClose,
+  onSignOut,
+  canSignOut,
+}: Props) {
   const [draft, setDraft] = useState("");
 
   if (!open) return null;
@@ -69,6 +80,16 @@ export function SettingsMenu({ open, defaultTags, onAdd, onRemove, onClose }: Pr
             </button>
           </form>
         </section>
+
+        {canSignOut && (
+          <section className="panel__section">
+            <h3>Account</h3>
+            <p className="panel__hint">Your data syncs across devices via the shared passphrase.</p>
+            <button type="button" className="btn btn--danger" onClick={onSignOut}>
+              Sign out
+            </button>
+          </section>
+        )}
       </div>
     </div>
   );
