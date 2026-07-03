@@ -339,6 +339,8 @@ textarea:focus {
   line-height: 1;
   user-select: none;
   padding: 2px;
+  /* Claim the gesture so dragging from the grip never scrolls the page. */
+  touch-action: none;
 }
 
 .task__grip:hover {
@@ -813,6 +815,13 @@ textarea:focus {
   .task__check {
     width: 20px;
     height: 20px;
+  }
+
+  /* Bigger grip hit area for fingers. */
+  .task__grip {
+    font-size: 17px;
+    padding: 6px 4px;
+    opacity: 0.5;
   }
 
   .panel {

@@ -11,12 +11,12 @@ interface Props {
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
   onDelete: (id: string) => void;
-  // Drag-and-drop reordering.
+  // Pointer-based drag-and-drop reordering (works with mouse and touch).
   isDragging: boolean;
   isDragOver: boolean;
   onDragStart: (id: string) => void;
-  onDragEnter: (id: string) => void;
-  onDrop: (id: string) => void;
+  onDragOver: (id: string) => void;
+  onDrop: () => void;
   onDragEnd: () => void;
 }
 
@@ -29,7 +29,7 @@ export function TaskRow({
   isDragging,
   isDragOver,
   onDragStart,
-  onDragEnter,
+  onDragOver,
   onDrop,
   onDragEnd,
 }: Props) {
@@ -63,20 +63,33 @@ export function TaskRow({
     .join(" ");
 
   return (
-    <li
-      className={className}
-      onDragOver={(e) => e.preventDefault()}
-      onDragEnter={() => onDragEnter(task.id)}
-      onDrop={() => onDrop(task.id)}
-    >
+    <li className={className} data-task-id={task.id}>
       <div className="task__row">
         <span
           className="task__grip"
-          draggable
-          onDragStart={() => onDragStart(task.id)}
-          onDragEnd={onDragEnd}
+          role="button"
           aria-label="Drag to reorder"
           title="Drag to reorder"
+          onPointerDown={(e) => {
+            if (e.button !== 0 && e.pointerType === "mouse") return; // primary click only
+            e.preventDefault();
+            e.currentTarget.setPointerCapture(e.pointerId);
+            onDragStart(task.id);
+          }}
+          onPointerMove={(e) => {
+            if (!isDragging) return;
+            // Find the task row currently under the pointer/finger.
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            const row = el?.closest<HTMLElement>("[data-task-id]");
+            const overId = row?.dataset.taskId;
+            if (overId) onDragOver(overId);
+          }}
+          onPointerUp={(e) => {
+            if (!isDragging) return;
+            e.currentTarget.releasePointerCapture?.(e.pointerId);
+            onDrop();
+          }}
+          onPointerCancel={onDragEnd}
         >
           ⠿
         </span>

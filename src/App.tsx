@@ -145,8 +145,15 @@ function TodoApp({
     }
   };
 
-  const handleDrop = (targetId: string) => {
-    if (draggedId && draggedId !== targetId) actions.reorderTasks(draggedId, targetId);
+  const handleDrop = () => {
+    if (draggedId && dragOverId && draggedId !== dragOverId) {
+      actions.reorderTasks(draggedId, dragOverId);
+    }
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const endDrag = () => {
     setDraggedId(null);
     setDragOverId(null);
   };
@@ -250,12 +257,9 @@ function TodoApp({
                     isDragging={draggedId === task.id}
                     isDragOver={dragOverId === task.id && draggedId !== task.id}
                     onDragStart={setDraggedId}
-                    onDragEnter={setDragOverId}
+                    onDragOver={setDragOverId}
                     onDrop={handleDrop}
-                    onDragEnd={() => {
-                      setDraggedId(null);
-                      setDragOverId(null);
-                    }}
+                    onDragEnd={endDrag}
                   />
                 ))}
               </ul>
