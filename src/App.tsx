@@ -6,8 +6,7 @@ import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { PassphraseGate } from "./components/PassphraseGate";
-
-const PASSPHRASE_KEY = "to-do-list/passphrase";
+import { PASSPHRASE_KEY } from "./lib/auth";
 
 /**
  * Top level: gate on a passphrase, then run the app against a backend-backed
