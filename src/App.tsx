@@ -4,6 +4,7 @@ import { HttpRepository, verifyPassphrase, type Repository } from "./lib/reposit
 import { collectTags } from "./lib/operations";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
+import { CompletedView } from "./components/CompletedView";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { PassphraseGate } from "./components/PassphraseGate";
 import { PASSPHRASE_KEY } from "./lib/auth";
@@ -86,6 +87,7 @@ function TodoApp({
   const [showCompleted, setShowCompleted] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile lists drawer
+  const [completedView, setCompletedView] = useState(false); // global Completed view
 
   // Drag-and-drop reordering state.
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -169,9 +171,14 @@ function TodoApp({
         lists={data.lists}
         tasks={data.tasks}
         activeListId={activeListId}
-        onSelect={setActiveListId}
+        onSelect={(id) => {
+          setActiveListId(id);
+          setCompletedView(false);
+        }}
         onAddList={(name) => actions.addList(name)}
         onOpenMenu={() => setMenuOpen(true)}
+        completedActive={completedView}
+        onSelectCompleted={() => setCompletedView(true)}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -193,7 +200,9 @@ function TodoApp({
 
         {error && <div className="banner banner--warn">{error}</div>}
 
-        {activeList ? (
+        {completedView ? (
+          <CompletedView tasks={data.tasks} lists={data.lists} onToggle={actions.toggleTask} />
+        ) : activeList ? (
           <>
             <header className="main__header">
               <input

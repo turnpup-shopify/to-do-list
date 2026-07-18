@@ -25,6 +25,10 @@ Redis KV store), gated by a single shared passphrase.
   **hamburger menu** (☰) in the sidebar.
 - **Tag filtering** — click tag chips above a list to filter to tasks matching
   all selected tags. Toggle completed tasks in/out of view.
+- **Completed view** — a dedicated "✓ Completed" view (in the sidebar) lists
+  everything you've finished across all lists, newest-first, with a switch to
+  group by week, by month, or not at all. (Shows the last 30 days — see
+  auto-cleanup below.)
 - **Daily reminders (opt-in)** — turn on push notifications from the settings
   panel to get one notification each morning listing what's due today plus
   anything overdue.

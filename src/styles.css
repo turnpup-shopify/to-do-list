@@ -205,6 +205,16 @@ textarea {
   text-align: right;
 }
 
+.sidebar__divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 6px 6px;
+}
+
+.list-item--completed .list-item__name {
+  color: var(--text-dim);
+}
+
 .sidebar__add {
   display: flex;
   gap: 6px;
@@ -266,6 +276,93 @@ textarea:focus {
   border-color: var(--glass-border) !important;
   background: var(--glass-hover) !important;
   outline: none;
+}
+
+/* Non-editable page title (e.g. the Completed view). */
+.main__title--static {
+  padding: 4px 0;
+}
+
+.main__title--static:hover {
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+/* ---------- Completed view ---------- */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg-strong);
+}
+
+.segmented__btn {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.segmented__btn--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.cgroup {
+  margin-bottom: 18px;
+}
+
+.cgroup__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+  padding: 0 4px;
+}
+
+.ctask {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.ctask:hover {
+  background: var(--glass-hover);
+}
+
+.ctask__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-dim);
+  text-decoration: line-through;
+}
+
+.ctask__list {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 1px 9px;
+}
+
+.ctask__date {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .add-task {
