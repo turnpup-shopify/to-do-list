@@ -25,7 +25,14 @@ Redis KV store), gated by a single shared passphrase.
   **hamburger menu** (☰) in the sidebar.
 - **Tag filtering** — click tag chips above a list to filter to tasks matching
   all selected tags. Toggle completed tasks in/out of view.
-- **Auto-cleanup** — tasks completed more than **30 days** ago are automatically
+- **Completed view** — a dedicated "✓ Completed" view (in the sidebar) lists
+  everything you've finished across all lists, newest-first, with a switch to
+  group by week, by month, or not at all. (Shows the last 365 days — see
+  auto-cleanup below.)
+- **Daily reminders (opt-in)** — turn on push notifications from the settings
+  panel to get one notification each morning listing what's due today plus
+  anything overdue.
+- **Auto-cleanup** — tasks completed more than **365 days** ago are automatically
   deleted on load, so the app stays lean.
 
 ## Deploying to Vercel (one-time setup)
@@ -45,6 +52,26 @@ Vercel builds and hosts both, and auto-deploys on every push to `main`.
 
 Open the deployment, enter your passphrase, and you're in. Enter the same
 passphrase on any other device to see the same lists.
+
+### Reminders (Web Push) — optional
+
+A daily digest of tasks due today/overdue can be pushed as a notification.
+
+1. **Generate VAPID keys:** `npx web-push generate-vapid-keys`.
+2. **Add env vars** (Settings → Environment Variables):
+   - `VAPID_PUBLIC_KEY` and `VITE_VAPID_PUBLIC_KEY` — both set to the **public** key.
+   - `VAPID_PRIVATE_KEY` — the private key.
+   - `VAPID_SUBJECT` — `mailto:you@example.com`.
+   - `CRON_SECRET` — any long random string (Vercel sends it to the cron job).
+3. **Redeploy**, open the app, and toggle **Reminders → on** in the settings
+   panel (☰ → ⚙). Grant the notification permission when asked.
+
+The schedule lives in `vercel.json` (`0 13 * * *`, i.e. 13:00 UTC daily) — edit
+it to suit your timezone. Note: Vercel's free Hobby plan runs cron **once per
+day**; more frequent reminders need the Pro plan.
+
+**On iPhone/iPad**, Safari only delivers Web Push to an installed PWA: open the
+site, tap Share → **Add to Home Screen**, then enable reminders from that icon.
 
 > Security note: the KV credentials live only in the serverless function's
 > environment — they're never sent to the browser. The browser only holds the
@@ -70,9 +97,10 @@ The code is deliberately layered so it's easy to swap storage or even frameworks
 | Layer | File(s) | Responsibility |
 | --- | --- | --- |
 | **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `Settings`, `AppData`). |
-| **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the 30-day purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
+| **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the retention purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
 | **Persistence** | `src/lib/repository.ts` | A small async `Repository` interface with two implementations: `HttpRepository` (the backend) and `LocalStorageRepository` (offline/standalone). |
-| **Backend** | `api/state.js` | Serverless `GET`/`PUT` of the whole state blob to Redis, guarded by the passphrase. |
+| **Backend** | `api/state.js`, `api/subscribe.js`, `api/cron.js`, `api/_lib.js` | Serverless `GET`/`PUT` of the state blob, push-subscription storage, the daily reminder cron, and shared helpers — all guarded by the passphrase. |
+| **Service worker** | `public/sw.js` | Receives Web Push messages and shows notifications. |
 | **State** | `src/lib/useStore.ts` | A React hook wiring operations to the repository, with debounced saves. |
 | **UI** | `src/App.tsx`, `src/components/*` | Presentation only (incl. the passphrase gate). |
 

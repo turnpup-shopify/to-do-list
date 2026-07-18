@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { RemindersToggle } from "./RemindersToggle";
 
 interface Props {
   open: boolean;
@@ -80,6 +81,8 @@ export function SettingsMenu({
             </button>
           </form>
         </section>
+
+        <RemindersToggle />
 
         {canSignOut && (
           <section className="panel__section">

@@ -8,6 +8,9 @@ interface Props {
   onSelect: (id: string) => void;
   onAddList: (name: string) => void;
   onOpenMenu: () => void;
+  /** Whether the global Completed view is currently showing. */
+  completedActive: boolean;
+  onSelectCompleted: () => void;
   /** Mobile: whether the sidebar drawer is open. Ignored on desktop. */
   isOpen: boolean;
   /** Mobile: close the drawer (e.g. after picking a list). */
@@ -21,6 +24,8 @@ export function Sidebar({
   onSelect,
   onAddList,
   onOpenMenu,
+  completedActive,
+  onSelectCompleted,
   isOpen,
   onClose,
 }: Props) {
@@ -36,6 +41,11 @@ export function Sidebar({
   const select = (id: string) => {
     onSelect(id);
     onClose(); // no-op on desktop; closes the drawer on mobile
+  };
+
+  const selectCompleted = () => {
+    onSelectCompleted();
+    onClose();
   };
 
   const openCount = (listId: string) =>
@@ -65,11 +75,21 @@ export function Sidebar({
         </button>
       </div>
       <nav className="sidebar__nav">
+        <button
+          type="button"
+          className={`list-item list-item--completed ${completedActive ? "list-item--active" : ""}`}
+          onClick={selectCompleted}
+        >
+          <span className="list-item__name">✓ Completed</span>
+        </button>
+        <div className="sidebar__divider" />
         {lists.map((list) => (
           <button
             key={list.id}
             type="button"
-            className={`list-item ${list.id === activeListId ? "list-item--active" : ""}`}
+            className={`list-item ${
+              list.id === activeListId && !completedActive ? "list-item--active" : ""
+            }`}
             onClick={() => select(list.id)}
           >
             <span className="list-item__name">{list.name}</span>
