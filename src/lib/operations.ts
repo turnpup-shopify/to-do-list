@@ -5,7 +5,7 @@ import type { AppData, List, Task } from "../types";
 // reuse in a non-React context.
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
-export const COMPLETED_RETENTION_DAYS = 30;
+export const COMPLETED_RETENTION_DAYS = 365;
 
 /** RFC4122-ish id. Uses crypto.randomUUID when available, falls back otherwise. */
 export function newId(): string {

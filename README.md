@@ -27,12 +27,12 @@ Redis KV store), gated by a single shared passphrase.
   all selected tags. Toggle completed tasks in/out of view.
 - **Completed view** — a dedicated "✓ Completed" view (in the sidebar) lists
   everything you've finished across all lists, newest-first, with a switch to
-  group by week, by month, or not at all. (Shows the last 30 days — see
+  group by week, by month, or not at all. (Shows the last 365 days — see
   auto-cleanup below.)
 - **Daily reminders (opt-in)** — turn on push notifications from the settings
   panel to get one notification each morning listing what's due today plus
   anything overdue.
-- **Auto-cleanup** — tasks completed more than **30 days** ago are automatically
+- **Auto-cleanup** — tasks completed more than **365 days** ago are automatically
   deleted on load, so the app stays lean.
 
 ## Deploying to Vercel (one-time setup)
@@ -97,7 +97,7 @@ The code is deliberately layered so it's easy to swap storage or even frameworks
 | Layer | File(s) | Responsibility |
 | --- | --- | --- |
 | **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `Settings`, `AppData`). |
-| **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the 30-day purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
+| **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the retention purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
 | **Persistence** | `src/lib/repository.ts` | A small async `Repository` interface with two implementations: `HttpRepository` (the backend) and `LocalStorageRepository` (offline/standalone). |
 | **Backend** | `api/state.js`, `api/subscribe.js`, `api/cron.js`, `api/_lib.js` | Serverless `GET`/`PUT` of the state blob, push-subscription storage, the daily reminder cron, and shared helpers — all guarded by the passphrase. |
 | **Service worker** | `public/sw.js` | Receives Web Push messages and shows notifications. |

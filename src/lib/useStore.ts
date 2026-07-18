@@ -14,7 +14,7 @@ interface Options {
 
 /**
  * Central application state hook. Loads once from the repository (running the
- * 30-day purge on the way in), then persists the whole snapshot on every change
+ * retention purge on the way in), then persists the whole snapshot on every change
  * — debounced, since the repository may be a remote endpoint. All mutations go
  * through the pure helpers in operations.ts.
  */
