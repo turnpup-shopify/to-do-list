@@ -259,9 +259,12 @@ function TodoApp({
                     key={task.id}
                     task={task}
                     suggestions={suggestions}
+                    lists={data.lists}
+                    currentListId={activeListId!}
                     onToggle={actions.toggleTask}
                     onUpdate={actions.updateTask}
                     onDelete={actions.deleteTask}
+                    onMove={actions.moveTask}
                     isDragging={draggedId === task.id}
                     isDragOver={dragOverId === task.id && draggedId !== task.id}
                     onDragStart={setDraggedId}

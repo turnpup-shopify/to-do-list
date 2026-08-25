@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Task } from "../types";
+import { useEffect, useRef, useState } from "react";
+import type { List, Task } from "../types";
 import { parseTags } from "../lib/operations";
 import { formatDateTime, formatDueDate, isOverdue } from "../lib/format";
 import { Linkify } from "./Linkify";
@@ -8,9 +8,14 @@ interface Props {
   task: Task;
   /** Suggested tags (defaults + already-used) to offer for quick tagging. */
   suggestions: string[];
+  /** All lists, used to populate the move menu. */
+  lists: List[];
+  /** The list this task currently belongs to. */
+  currentListId: string;
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
   onDelete: (id: string) => void;
+  onMove: (taskId: string, newListId: string) => void;
   // Pointer-based drag-and-drop reordering (works with mouse and touch).
   isDragging: boolean;
   isDragOver: boolean;
@@ -23,9 +28,12 @@ interface Props {
 export function TaskRow({
   task,
   suggestions,
+  lists,
+  currentListId,
   onToggle,
   onUpdate,
   onDelete,
+  onMove,
   isDragging,
   isDragOver,
   onDragStart,
@@ -34,8 +42,53 @@ export function TaskRow({
   onDragEnd,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   // Raw tag text is edited locally and parsed into clean tags on blur.
   const [tagText, setTagText] = useState(task.tags.join(", "));
+
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+  const moveMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close move menu when clicking outside.
+  useEffect(() => {
+    if (!moveMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) {
+        setMoveMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handleClick);
+    return () => document.removeEventListener("pointerdown", handleClick);
+  }, [moveMenuOpen]);
+
+  const clearLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTitlePointerDown = () => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      setMoveMenuOpen(true);
+    }, 500);
+  };
+
+  const handleTitlePointerUp = () => {
+    clearLongPress();
+    if (!didLongPress.current) {
+      setExpanded((e) => !e);
+    }
+  };
+
+  const handleTitlePointerLeave = () => {
+    clearLongPress();
+  };
+
+  const otherLists = lists.filter((l) => l.id !== currentListId);
 
   const commitTags = () => {
     const parsed = parseTags(tagText);
@@ -103,7 +156,10 @@ export function TaskRow({
         <button
           type="button"
           className="task__title"
-          onClick={() => setExpanded((e) => !e)}
+          onPointerDown={handleTitlePointerDown}
+          onPointerUp={handleTitlePointerUp}
+          onPointerLeave={handleTitlePointerLeave}
+          onContextMenu={(e) => e.preventDefault()}
           aria-expanded={expanded}
         >
           <span className="task__title-text">{task.title}</span>
@@ -126,6 +182,32 @@ export function TaskRow({
           {expanded ? "▾" : "▸"}
         </span>
       </div>
+
+      {moveMenuOpen && otherLists.length > 0 && (
+        <div className="task__move-menu" ref={moveMenuRef}>
+          <span className="task__move-label">Move to…</span>
+          {otherLists.map((list) => (
+            <button
+              key={list.id}
+              type="button"
+              className="task__move-option"
+              onClick={() => {
+                onMove(task.id, list.id);
+                setMoveMenuOpen(false);
+              }}
+            >
+              {list.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="task__move-option task__move-option--cancel"
+            onClick={() => setMoveMenuOpen(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {expanded && (
         <div className="task__details">

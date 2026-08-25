@@ -160,6 +160,14 @@ export function deleteTask(data: AppData, taskId: string): AppData {
   return { ...data, tasks: data.tasks.filter((t) => t.id !== taskId) };
 }
 
+/** Move a task to a different list. */
+export function moveTask(data: AppData, taskId: string, newListId: string): AppData {
+  return {
+    ...data,
+    tasks: data.tasks.map((t) => (t.id === taskId ? { ...t, listId: newListId } : t)),
+  };
+}
+
 /** All distinct tags used across the given tasks, sorted alphabetically. */
 export function collectTags(tasks: Task[]): string[] {
   const set = new Set<string>();

@@ -528,6 +528,54 @@ textarea:focus {
   color: var(--accent);
 }
 
+.task__move-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  margin: 0 10px 4px 34px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.task__move-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding: 2px 8px 4px;
+}
+
+.task__move-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s ease;
+}
+
+.task__move-option:hover {
+  background: var(--glass-hover);
+}
+
+.task__move-option--cancel {
+  color: var(--text-dim);
+  margin-top: 2px;
+  border-top: 1px solid var(--glass-border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  padding-top: 10px;
+}
+
 .task__actions {
   display: flex;
   justify-content: flex-end;
