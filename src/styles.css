@@ -467,6 +467,8 @@ textarea:focus {
   text-align: left;
   cursor: pointer;
   padding: 2px 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .task__title-text {
