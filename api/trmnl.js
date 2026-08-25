@@ -67,9 +67,15 @@ export default async function handler(req, res) {
       });
     }
 
+    // Flatten into an array of { list_name, tasks[] } for easy Liquid iteration
+    const listArray = Object.entries(grouped).map(([name, tasks]) => ({
+      list_name: name,
+      tasks,
+    }));
+
     return res.status(200).json({
       total: incomplete.length,
-      lists: grouped,
+      lists: listArray,
     });
   } catch {
     return res.status(500).json({ error: "storage error" });
