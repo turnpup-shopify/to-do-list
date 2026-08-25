@@ -1,6 +1,7 @@
 // TRMNL custom plugin endpoint.
 //
-// GET /api/trmnl?token=xxx -> returns incomplete tasks grouped by list as JSON
+// GET /api/trmnl?token=xxx       -> returns incomplete tasks grouped by list as JSON
+// GET /api/trmnl?token=xxx&list=X -> returns only the list whose name matches X (case-insensitive)
 //
 // Auth: query param `token` compared against TRMNL_TOKEN env var.
 // If TRMNL_TOKEN is unset, the endpoint is open (like APP_PASSPHRASE behavior).
@@ -67,14 +68,24 @@ export default async function handler(req, res) {
       });
     }
 
+    // Optional: filter to a single list by name (case-insensitive)
+    const filterList = req.query?.list;
+    let entries = Object.entries(grouped);
+    if (filterList) {
+      const needle = filterList.toLowerCase();
+      entries = entries.filter(([name]) => name.toLowerCase() === needle);
+    }
+
     // Flatten into an array of { list_name, tasks[] } for easy Liquid iteration
-    const listArray = Object.entries(grouped).map(([name, tasks]) => ({
+    const listArray = entries.map(([name, tasks]) => ({
       list_name: name,
       tasks,
     }));
 
+    const taskCount = listArray.reduce((sum, l) => sum + l.tasks.length, 0);
+
     return res.status(200).json({
-      total: incomplete.length,
+      total: taskCount,
       lists: listArray,
     });
   } catch {
