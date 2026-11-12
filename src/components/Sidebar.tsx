@@ -8,9 +8,10 @@ interface Props {
   onSelect: (id: string) => void;
   onAddList: (name: string) => void;
   onOpenMenu: () => void;
-  /** Whether the global Completed view is currently showing. */
-  completedActive: boolean;
+  /** Which global view is active. */
+  activeView: "list" | "completed" | "timeline";
   onSelectCompleted: () => void;
+  onSelectTimeline: () => void;
   /** Mobile: whether the sidebar drawer is open. Ignored on desktop. */
   isOpen: boolean;
   /** Mobile: close the drawer (e.g. after picking a list). */
@@ -24,8 +25,9 @@ export function Sidebar({
   onSelect,
   onAddList,
   onOpenMenu,
-  completedActive,
+  activeView,
   onSelectCompleted,
+  onSelectTimeline,
   isOpen,
   onClose,
 }: Props) {
@@ -45,6 +47,11 @@ export function Sidebar({
 
   const selectCompleted = () => {
     onSelectCompleted();
+    onClose();
+  };
+
+  const selectTimeline = () => {
+    onSelectTimeline();
     onClose();
   };
 
@@ -77,7 +84,14 @@ export function Sidebar({
       <nav className="sidebar__nav">
         <button
           type="button"
-          className={`list-item list-item--completed ${completedActive ? "list-item--active" : ""}`}
+          className={`list-item list-item--special ${activeView === "timeline" ? "list-item--active" : ""}`}
+          onClick={selectTimeline}
+        >
+          <span className="list-item__name">🗓 Timeline</span>
+        </button>
+        <button
+          type="button"
+          className={`list-item list-item--special ${activeView === "completed" ? "list-item--active" : ""}`}
           onClick={selectCompleted}
         >
           <span className="list-item__name">✓ Completed</span>
@@ -88,7 +102,7 @@ export function Sidebar({
             key={list.id}
             type="button"
             className={`list-item ${
-              list.id === activeListId && !completedActive ? "list-item--active" : ""
+              list.id === activeListId && activeView === "list" ? "list-item--active" : ""
             }`}
             onClick={() => select(list.id)}
           >

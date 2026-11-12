@@ -17,11 +17,27 @@ export interface Task {
   completedAt: string | null;
   /** Optional due date as a YYYY-MM-DD string, or null if none. */
   dueDate: string | null;
+  /** Optional parent monthly item (launch) this task is a sub-item of. */
+  monthlyItemId: string | null;
 }
 
 export interface List {
   id: string;
   name: string;
+  createdAt: string;
+}
+
+/**
+ * A high-level thing to launch in a given month — the planning layer above
+ * tasks. Its sub-items are ordinary tasks whose monthlyItemId points here.
+ */
+export interface MonthlyItem {
+  id: string;
+  title: string;
+  /** Target month as "YYYY-MM". */
+  month: string;
+  /** Optional free-text notes. */
+  notes: string;
   createdAt: string;
 }
 
@@ -36,6 +52,7 @@ export interface AppData {
   lists: List[];
   tasks: Task[];
   settings: Settings;
+  monthlyItems: MonthlyItem[];
 }
 
 /** Tags seeded on first run; fully editable afterwards. */
@@ -47,4 +64,5 @@ export const emptyAppData = (): AppData => ({
   lists: [],
   tasks: [],
   settings: emptySettings(),
+  monthlyItems: [],
 });

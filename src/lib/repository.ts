@@ -25,7 +25,7 @@ export class UnauthorizedError extends Error {
 export function normalizeAppData(parsed: Partial<AppData> | null | undefined): AppData {
   if (!parsed) return emptyAppData();
   const tasks: Task[] = Array.isArray(parsed.tasks)
-    ? parsed.tasks.map((t) => ({ ...t, dueDate: t.dueDate ?? null }))
+    ? parsed.tasks.map((t) => ({ ...t, dueDate: t.dueDate ?? null, monthlyItemId: t.monthlyItemId ?? null }))
     : [];
   return {
     lists: Array.isArray(parsed.lists) ? parsed.lists : [],
@@ -33,6 +33,7 @@ export function normalizeAppData(parsed: Partial<AppData> | null | undefined): A
     settings: parsed.settings?.defaultTags
       ? { defaultTags: parsed.settings.defaultTags }
       : emptySettings(),
+    monthlyItems: Array.isArray(parsed.monthlyItems) ? parsed.monthlyItems : [],
   };
 }
 

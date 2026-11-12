@@ -1,41 +1,43 @@
 import { useEffect, useRef, useState } from "react";
-import type { List, Task } from "../types";
+import type { List, MonthlyItem, Task } from "../types";
 import { parseTags } from "../lib/operations";
-import { formatDateTime, formatDueDate, isOverdue } from "../lib/format";
+import { formatDateTime, formatDueDate, isOverdue, monthLabel } from "../lib/format";
 import { Linkify } from "./Linkify";
 
 interface Props {
   task: Task;
   /** Suggested tags (defaults + already-used) to offer for quick tagging. */
   suggestions: string[];
-  /** All lists, used to populate the move menu. */
-  lists: List[];
-  /** The list this task currently belongs to. */
-  currentListId: string;
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
   onDelete: (id: string) => void;
-  onMove: (taskId: string, newListId: string) => void;
-  // Pointer-based drag-and-drop reordering (works with mouse and touch).
-  isDragging: boolean;
-  isDragOver: boolean;
-  onDragStart: (id: string) => void;
-  onDragOver: (id: string) => void;
-  onDrop: () => void;
-  onDragEnd: () => void;
+  /** When provided (with currentListId + onMove), long-press opens a "Move to…" menu. */
+  lists?: List[];
+  currentListId?: string;
+  onMove?: (taskId: string, newListId: string) => void;
+  /** When provided, the detail panel shows a "Launch" selector to link this task. */
+  monthlyItems?: MonthlyItem[];
+  // Pointer-based drag-and-drop reordering — optional (omitted in the breakout).
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStart?: (id: string) => void;
+  onDragOver?: (id: string) => void;
+  onDrop?: () => void;
+  onDragEnd?: () => void;
 }
 
 export function TaskRow({
   task,
   suggestions,
-  lists,
-  currentListId,
   onToggle,
   onUpdate,
   onDelete,
+  lists,
+  currentListId,
   onMove,
-  isDragging,
-  isDragOver,
+  monthlyItems,
+  isDragging = false,
+  isDragOver = false,
   onDragStart,
   onDragOver,
   onDrop,
@@ -46,11 +48,15 @@ export function TaskRow({
   // Raw tag text is edited locally and parsed into clean tags on blur.
   const [tagText, setTagText] = useState(task.tags.join(", "));
 
+  const draggable = !!onDragStart;
+  const canMove = !!onMove && !!lists && !!currentListId;
+  const otherLists = canMove ? lists!.filter((l) => l.id !== currentListId) : [];
+
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
   const moveMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close move menu when clicking outside.
+  // Close the move menu when clicking outside.
   useEffect(() => {
     if (!moveMenuOpen) return;
     const handleClick = (e: MouseEvent) => {
@@ -69,8 +75,10 @@ export function TaskRow({
     }
   };
 
+  // Long-press (where enabled) opens the move menu; a short press toggles details.
   const handleTitlePointerDown = () => {
     didLongPress.current = false;
+    if (!canMove) return;
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
       setMoveMenuOpen(true);
@@ -79,16 +87,8 @@ export function TaskRow({
 
   const handleTitlePointerUp = () => {
     clearLongPress();
-    if (!didLongPress.current) {
-      setExpanded((e) => !e);
-    }
+    if (!didLongPress.current) setExpanded((e) => !e);
   };
-
-  const handleTitlePointerLeave = () => {
-    clearLongPress();
-  };
-
-  const otherLists = lists.filter((l) => l.id !== currentListId);
 
   const commitTags = () => {
     const parsed = parseTags(tagText);
@@ -118,34 +118,36 @@ export function TaskRow({
   return (
     <li className={className} data-task-id={task.id}>
       <div className="task__row">
-        <span
-          className="task__grip"
-          role="button"
-          aria-label="Drag to reorder"
-          title="Drag to reorder"
-          onPointerDown={(e) => {
-            if (e.button !== 0 && e.pointerType === "mouse") return; // primary click only
-            e.preventDefault();
-            e.currentTarget.setPointerCapture(e.pointerId);
-            onDragStart(task.id);
-          }}
-          onPointerMove={(e) => {
-            if (!isDragging) return;
-            // Find the task row currently under the pointer/finger.
-            const el = document.elementFromPoint(e.clientX, e.clientY);
-            const row = el?.closest<HTMLElement>("[data-task-id]");
-            const overId = row?.dataset.taskId;
-            if (overId) onDragOver(overId);
-          }}
-          onPointerUp={(e) => {
-            if (!isDragging) return;
-            e.currentTarget.releasePointerCapture?.(e.pointerId);
-            onDrop();
-          }}
-          onPointerCancel={onDragEnd}
-        >
-          ⠿
-        </span>
+        {draggable && (
+          <span
+            className="task__grip"
+            role="button"
+            aria-label="Drag to reorder"
+            title="Drag to reorder"
+            onPointerDown={(e) => {
+              if (e.button !== 0 && e.pointerType === "mouse") return; // primary click only
+              e.preventDefault();
+              e.currentTarget.setPointerCapture(e.pointerId);
+              onDragStart!(task.id);
+            }}
+            onPointerMove={(e) => {
+              if (!isDragging) return;
+              // Find the task row currently under the pointer/finger.
+              const el = document.elementFromPoint(e.clientX, e.clientY);
+              const row = el?.closest<HTMLElement>("[data-task-id]");
+              const overId = row?.dataset.taskId;
+              if (overId) onDragOver!(overId);
+            }}
+            onPointerUp={(e) => {
+              if (!isDragging) return;
+              e.currentTarget.releasePointerCapture?.(e.pointerId);
+              onDrop!();
+            }}
+            onPointerCancel={onDragEnd}
+          >
+            ⠿
+          </span>
+        )}
         <input
           type="checkbox"
           className="task__check"
@@ -158,7 +160,7 @@ export function TaskRow({
           className="task__title"
           onPointerDown={handleTitlePointerDown}
           onPointerUp={handleTitlePointerUp}
-          onPointerLeave={handleTitlePointerLeave}
+          onPointerLeave={clearLongPress}
           onContextMenu={(e) => e.preventDefault()}
           aria-expanded={expanded}
         >
@@ -192,7 +194,7 @@ export function TaskRow({
               type="button"
               className="task__move-option"
               onClick={() => {
-                onMove(task.id, list.id);
+                onMove?.(task.id, list.id);
                 setMoveMenuOpen(false);
               }}
             >
@@ -272,6 +274,23 @@ export function TaskRow({
             </div>
           )}
 
+          {monthlyItems && (
+            <label className="field">
+              <span className="field__label">Launch</span>
+              <select
+                value={task.monthlyItemId ?? ""}
+                onChange={(e) => onUpdate(task.id, { monthlyItemId: e.target.value || null })}
+              >
+                <option value="">— None —</option>
+                {monthlyItems.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title} · {monthLabel(m.month)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <dl className="meta">
             <div>
               <dt>Created</dt>
@@ -284,11 +303,7 @@ export function TaskRow({
           </dl>
 
           <div className="task__actions">
-            <button
-              type="button"
-              className="btn btn--danger"
-              onClick={() => onDelete(task.id)}
-            >
+            <button type="button" className="btn btn--danger" onClick={() => onDelete(task.id)}>
               Delete task
             </button>
           </div>
