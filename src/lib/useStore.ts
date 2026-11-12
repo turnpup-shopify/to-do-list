@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AppData, Task } from "../types";
+import type { AppData, MonthlyItem, Task } from "../types";
 import { emptyAppData } from "../types";
 import { UnauthorizedError, type Repository } from "./repository";
 import * as ops from "./operations";
@@ -70,7 +70,8 @@ export function useStore(repository: Repository, opts: Options = {}) {
       addList: (name: string) => setData((d) => ops.addList(d, name)),
       renameList: (id: string, name: string) => setData((d) => ops.renameList(d, id, name)),
       deleteList: (id: string) => setData((d) => ops.deleteList(d, id)),
-      addTask: (listId: string, title: string) => setData((d) => ops.addTask(d, listId, title)),
+      addTask: (listId: string, title: string, monthlyItemId: string | null = null) =>
+        setData((d) => ops.addTask(d, listId, title, monthlyItemId)),
       updateTask: (id: string, patch: Partial<Omit<Task, "id" | "listId" | "createdAt">>) =>
         setData((d) => ops.updateTask(d, id, patch)),
       toggleTask: (id: string) => setData((d) => ops.toggleTask(d, id)),
@@ -80,6 +81,11 @@ export function useStore(repository: Repository, opts: Options = {}) {
         setData((d) => ops.reorderTasks(d, draggedId, targetId)),
       addDefaultTag: (tag: string) => setData((d) => ops.addDefaultTag(d, tag)),
       removeDefaultTag: (tag: string) => setData((d) => ops.removeDefaultTag(d, tag)),
+      addMonthlyItem: (title: string, month: string) =>
+        setData((d) => ops.addMonthlyItem(d, title, month)),
+      updateMonthlyItem: (id: string, patch: Partial<Omit<MonthlyItem, "id" | "createdAt">>) =>
+        setData((d) => ops.updateMonthlyItem(d, id, patch)),
+      deleteMonthlyItem: (id: string) => setData((d) => ops.deleteMonthlyItem(d, id)),
     }),
     [],
   );

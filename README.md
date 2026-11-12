@@ -25,6 +25,11 @@ Redis KV store), gated by a single shared passphrase.
   **hamburger menu** (☰) in the sidebar.
 - **Tag filtering** — click tag chips above a list to filter to tasks matching
   all selected tags. Toggle completed tasks in/out of view.
+- **Monthly timeline / roadmap** — a "🗓 Timeline" view organizes **monthly
+  items** (things to launch) month by month. Each monthly item breaks out into
+  **sub-items** (ordinary tasks linked to it) so you can work back from a launch;
+  sub-items stay hidden on the timeline but show in the breakout and in their
+  list. Link any task to a launch from its detail panel.
 - **Completed view** — a dedicated "✓ Completed" view (in the sidebar) lists
   everything you've finished across all lists, newest-first, with a switch to
   group by week, by month, or not at all. (Shows the last 365 days — see
@@ -96,7 +101,7 @@ The code is deliberately layered so it's easy to swap storage or even frameworks
 
 | Layer | File(s) | Responsibility |
 | --- | --- | --- |
-| **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `Settings`, `AppData`). |
+| **Domain model** | `src/types.ts` | Plain, framework-agnostic types (`Task`, `List`, `MonthlyItem`, `Settings`, `AppData`). |
 | **Operations** | `src/lib/operations.ts` | Pure functions that transform state (add/toggle/delete, reorder, the retention purge, tag parsing, default-tag editing). No React, no storage — trivially testable and reusable. |
 | **Persistence** | `src/lib/repository.ts` | A small async `Repository` interface with two implementations: `HttpRepository` (the backend) and `LocalStorageRepository` (offline/standalone). |
 | **Backend** | `api/state.js`, `api/subscribe.js`, `api/cron.js`, `api/_lib.js` | Serverless `GET`/`PUT` of the state blob, push-subscription storage, the daily reminder cron, and shared helpers — all guarded by the passphrase. |

@@ -1,4 +1,4 @@
-import type { AppData, List, Task } from "../types";
+import type { AppData, List, MonthlyItem, Task } from "../types";
 
 // Pure, side-effect-free helpers that transform AppData. Keeping mutations here
 // (rather than inside React components) makes the behaviour easy to test and to
@@ -74,6 +74,7 @@ export function addTask(
   data: AppData,
   listId: string,
   title: string,
+  monthlyItemId: string | null = null,
   now: number = Date.now(),
 ): AppData {
   const trimmed = title.trim();
@@ -88,6 +89,7 @@ export function addTask(
     createdAt: new Date(now).toISOString(),
     completedAt: null,
     dueDate: null,
+    monthlyItemId,
   };
   return { ...data, tasks: [task, ...data.tasks] };
 }
@@ -173,4 +175,44 @@ export function collectTags(tasks: Task[]): string[] {
   const set = new Set<string>();
   for (const task of tasks) for (const tag of task.tags) set.add(tag);
   return [...set].sort();
+}
+
+// ---------- Monthly items (the launch / roadmap layer) ----------
+
+export function addMonthlyItem(
+  data: AppData,
+  title: string,
+  month: string,
+  now: number = Date.now(),
+): AppData {
+  const trimmed = title.trim();
+  if (!trimmed || !month) return data;
+  const item: MonthlyItem = {
+    id: newId(),
+    title: trimmed,
+    month,
+    notes: "",
+    createdAt: new Date(now).toISOString(),
+  };
+  return { ...data, monthlyItems: [...data.monthlyItems, item] };
+}
+
+export function updateMonthlyItem(
+  data: AppData,
+  id: string,
+  patch: Partial<Omit<MonthlyItem, "id" | "createdAt">>,
+): AppData {
+  return {
+    ...data,
+    monthlyItems: data.monthlyItems.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+  };
+}
+
+/** Delete a monthly item. Its sub-items are kept but un-linked from it. */
+export function deleteMonthlyItem(data: AppData, id: string): AppData {
+  return {
+    ...data,
+    monthlyItems: data.monthlyItems.filter((m) => m.id !== id),
+    tasks: data.tasks.map((t) => (t.monthlyItemId === id ? { ...t, monthlyItemId: null } : t)),
+  };
 }

@@ -5,6 +5,7 @@ import { collectTags } from "./lib/operations";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
 import { CompletedView } from "./components/CompletedView";
+import { TimelineView } from "./components/TimelineView";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { PassphraseGate } from "./components/PassphraseGate";
 import { PASSPHRASE_KEY } from "./lib/auth";
@@ -87,7 +88,7 @@ function TodoApp({
   const [showCompleted, setShowCompleted] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile lists drawer
-  const [completedView, setCompletedView] = useState(false); // global Completed view
+  const [view, setView] = useState<"list" | "completed" | "timeline">("list");
 
   // Drag-and-drop reordering state.
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -173,12 +174,13 @@ function TodoApp({
         activeListId={activeListId}
         onSelect={(id) => {
           setActiveListId(id);
-          setCompletedView(false);
+          setView("list");
         }}
         onAddList={(name) => actions.addList(name)}
         onOpenMenu={() => setMenuOpen(true)}
-        completedActive={completedView}
-        onSelectCompleted={() => setCompletedView(true)}
+        activeView={view}
+        onSelectCompleted={() => setView("completed")}
+        onSelectTimeline={() => setView("timeline")}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -200,7 +202,16 @@ function TodoApp({
 
         {error && <div className="banner banner--warn">{error}</div>}
 
-        {completedView ? (
+        {view === "timeline" ? (
+          <TimelineView
+            monthlyItems={data.monthlyItems}
+            tasks={data.tasks}
+            lists={data.lists}
+            suggestions={suggestions}
+            defaultListId={activeListId ?? data.lists[0]?.id ?? null}
+            actions={actions}
+          />
+        ) : view === "completed" ? (
           <CompletedView tasks={data.tasks} lists={data.lists} onToggle={actions.toggleTask} />
         ) : activeList ? (
           <>
@@ -261,6 +272,7 @@ function TodoApp({
                     suggestions={suggestions}
                     lists={data.lists}
                     currentListId={activeListId!}
+                    monthlyItems={data.monthlyItems}
                     onToggle={actions.toggleTask}
                     onUpdate={actions.updateTask}
                     onDelete={actions.deleteTask}

@@ -211,7 +211,7 @@ textarea {
   margin: 6px 6px;
 }
 
-.list-item--completed .list-item__name {
+.list-item--special .list-item__name {
   color: var(--text-dim);
 }
 
@@ -822,6 +822,138 @@ textarea:focus {
 .banner--warn {
   color: var(--danger);
   border-color: var(--danger);
+}
+
+/* ---------- Timeline view ---------- */
+.timeline__add input[type="month"] {
+  flex: 0 0 auto;
+}
+
+.tl-month {
+  margin-bottom: 22px;
+}
+
+.tl-month__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.tl-month__badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.mi {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-strong);
+  margin-bottom: 8px;
+}
+
+.mi__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.mi__head {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  padding: 0;
+}
+
+.mi__chevron {
+  color: var(--text-dim);
+  font-size: 11px;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.mi__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mi--done .mi__title {
+  color: var(--text-dim);
+  text-decoration: line-through;
+}
+
+.mi__count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.mi__count--done {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.mi__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 14px 16px 32px;
+}
+
+.mi__detail select,
+.task__details select {
+  padding: 8px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-strong);
+  color: var(--text);
+}
+
+.mi__subs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mi__add {
+  display: flex;
+  gap: 6px;
+}
+
+.mi__add input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.mi__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* ---------- Passphrase gate ---------- */

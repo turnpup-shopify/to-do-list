@@ -45,3 +45,18 @@ export function formatDueDate(date: string | null): string {
 export function isOverdue(date: string | null): boolean {
   return !!date && date < todayISODate();
 }
+
+const monthLabelFmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+
+/** "2026-11" -> "November 2026". */
+export function monthLabel(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return ym;
+  return monthLabelFmt.format(new Date(y, m - 1, 1));
+}
+
+/** Current month as "YYYY-MM" in local time. */
+export function currentMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
