@@ -60,3 +60,18 @@ export function currentMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+
+/** Shift a "YYYY-MM" month by n months (n may be negative). */
+export function addMonths(ym: string, n: number): string {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 1 + n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+const monthShortFmt = new Intl.DateTimeFormat(undefined, { month: "short" });
+
+/** "2026-11" -> { month: "Nov", year: 2026 }. */
+export function monthParts(ym: string): { month: string; year: number } {
+  const [y, m] = ym.split("-").map(Number);
+  return { month: monthShortFmt.format(new Date(y, m - 1, 1)), year: y };
+}

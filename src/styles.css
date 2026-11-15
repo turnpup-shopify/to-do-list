@@ -956,6 +956,244 @@ textarea:focus {
   justify-content: flex-end;
 }
 
+/* ---------- Timeline: months board ---------- */
+.board__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.board__nav .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.board__range {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.mcard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 190px;
+  padding: 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass-bg-strong);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.mcard:hover,
+.mcard:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+.mcard--now {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.mcard--past {
+  opacity: 0.7;
+}
+
+.mcard--drop {
+  border-style: dashed;
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+.mcard__head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.mcard__month {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.mcard__year {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-right: auto;
+}
+
+.mcard__party {
+  font-size: 18px;
+  animation: pop 0.4s ease;
+}
+
+.mcard__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--glass-hover);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+
+.mcard__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #b07cf0);
+  transition: width 0.35s ease;
+}
+
+.mcard__bar--lg {
+  height: 8px;
+  margin-bottom: 6px;
+}
+
+.mcard__stat {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.mcard__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mchip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  text-align: left;
+  cursor: grab;
+  font-size: 13px;
+}
+
+.mchip:hover {
+  border-color: var(--accent);
+}
+
+.mchip--dragging {
+  opacity: 0.4;
+}
+
+.mchip__dot {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  font-size: 9px;
+  color: var(--accent-contrast);
+}
+
+.mchip--done .mchip__dot {
+  background: var(--accent);
+}
+
+.mchip__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mchip--done .mchip__title {
+  color: var(--text-dim);
+  text-decoration: line-through;
+}
+
+.mchip__count {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.mcard__add {
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.mcard:hover .mcard__add,
+.mcard:focus-visible .mcard__add {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* Month drawer slides in from the right so the board stays in view. */
+.overlay--right {
+  justify-content: flex-end;
+  background: rgba(20, 24, 45, 0.18);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.panel--right {
+  width: 460px;
+  border-radius: var(--radius) 0 0 var(--radius);
+  animation: slide-in-right 0.22s ease;
+}
+
+.panel--right .panel__header {
+  gap: 4px;
+}
+
+.drawer__title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.panel--right .mi__detail {
+  padding-left: 14px;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.3);
+  }
+  70% {
+    transform: scale(1.25);
+  }
+}
+
 /* ---------- Passphrase gate ---------- */
 .gate {
   height: 100%;
@@ -1105,6 +1343,26 @@ textarea:focus {
 
   .panel {
     width: 88vw;
+  }
+
+  .panel--right {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+  }
+
+  .board {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mcard {
+    min-height: 140px;
+    padding: 10px;
+  }
+
+  .mcard__add {
+    opacity: 1;
   }
 
   .meta {

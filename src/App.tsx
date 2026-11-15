@@ -225,6 +225,9 @@ function TodoApp({
               <button type="button" className="btn btn--ghost" onClick={removeActiveList}>
                 Delete list
               </button>
+              <button type="button" className="btn btn--primary" onClick={() => setView("timeline")}>
+                🗓 Timeline
+              </button>
             </header>
 
             <form className="add-task" onSubmit={addTask}>
