@@ -210,6 +210,7 @@ function TodoApp({
             suggestions={suggestions}
             defaultListId={activeListId ?? data.lists[0]?.id ?? null}
             actions={actions}
+            onOpenList={() => setView("list")}
           />
         ) : view === "completed" ? (
           <CompletedView tasks={data.tasks} lists={data.lists} onToggle={actions.toggleTask} />

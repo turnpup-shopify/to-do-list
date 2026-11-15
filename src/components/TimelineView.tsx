@@ -20,6 +20,7 @@ interface Props {
   suggestions: string[];
   defaultListId: string | null;
   actions: Actions;
+  onOpenList: () => void;
 }
 
 type Mode = "board" | "list";
@@ -42,7 +43,7 @@ function loadMode(): Mode {
 }
 
 /** The monthly roadmap: months → launch items → (breakout) sub-items. */
-export function TimelineView({ monthlyItems, tasks, lists, suggestions, defaultListId, actions }: Props) {
+export function TimelineView({ monthlyItems, tasks, lists, suggestions, defaultListId, actions, onOpenList }: Props) {
   const [title, setTitle] = useState("");
   const [month, setMonth] = useState(currentMonth());
   const [mode, setModeState] = useState<Mode>(loadMode);
@@ -81,6 +82,9 @@ export function TimelineView({ monthlyItems, tasks, lists, suggestions, defaultL
     <>
       <header className="main__header">
         <h2 className="main__title main__title--static">Timeline</h2>
+        <button type="button" className="btn btn--primary" onClick={onOpenList}>
+          ✓ To-Do List
+        </button>
       </header>
 
       <div className="segmented" role="tablist" aria-label="Timeline view">
