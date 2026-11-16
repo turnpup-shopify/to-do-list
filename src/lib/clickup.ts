@@ -16,3 +16,15 @@ export async function fetchClickUpTickets(
   if (!res.ok) throw new Error(body?.error ?? `ClickUp sync failed (${res.status})`);
   return { tickets: body.tickets ?? [], complete: body.complete !== false };
 }
+
+/** Set a ClickUp ticket's status — the app's only write-back to ClickUp. */
+export async function setClickUpStatus(taskId: string, status: string, passphrase: string): Promise<void> {
+  const res = await fetch("/api/clickup", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-app-passphrase": passphrase },
+    body: JSON.stringify({ taskId, status }),
+  });
+  if (res.status === 401) throw new UnauthorizedError();
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error ?? `ClickUp update failed (${res.status})`);
+}

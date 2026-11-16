@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./lib/useStore";
 import { HttpRepository, UnauthorizedError, verifyPassphrase, type Repository } from "./lib/repository";
 import { clickupListId, collectTags, syncClickUp } from "./lib/operations";
-import { fetchClickUpTickets } from "./lib/clickup";
+import { fetchClickUpTickets, setClickUpStatus } from "./lib/clickup";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
 import { CompletedView } from "./components/CompletedView";
@@ -174,6 +174,20 @@ function TodoApp({
     }
   };
 
+  // Write-back: set the ticket's status in ClickUp, then check it off here.
+  const markClickUpDone = async (taskId: string) => {
+    const task = data.tasks.find((t) => t.id === taskId);
+    if (!task?.clickupId) return;
+    try {
+      const passphrase = localStorage.getItem(PASSPHRASE_KEY) ?? "";
+      await setClickUpStatus(task.clickupId, data.settings.clickup.doneStatus, passphrase);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onSignOut();
+      throw err;
+    }
+    if (!task.completed) actions.toggleTask(task.id);
+  };
+
   const handleDrop = () => {
     if (draggedId && dragOverId && draggedId !== dragOverId) {
       actions.reorderTasks(draggedId, dragOverId);
@@ -319,6 +333,8 @@ function TodoApp({
                     onUpdate={actions.updateTask}
                     onDelete={actions.deleteTask}
                     onMove={actions.moveTask}
+                    clickupDoneStatus={data.settings.clickup.doneStatus}
+                    onClickUpDone={markClickUpDone}
                     isDragging={draggedId === task.id}
                     isDragOver={dragOverId === task.id && draggedId !== task.id}
                     onDragStart={setDraggedId}

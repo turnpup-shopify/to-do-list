@@ -745,6 +745,50 @@ textarea:focus {
   height: 60%;
 }
 
+/* ---------- ClickUp tasks ---------- */
+.task__cu {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: linear-gradient(135deg, #7b68ee, #fd71af);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.task--clickup .task__check:disabled {
+  cursor: not-allowed;
+}
+
+.cu-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid #7b68ee;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+}
+
+.cu-panel__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.cu-panel__link {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.cu-panel__error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+
 /* ---------- Settings overlay ---------- */
 .overlay {
   position: fixed;

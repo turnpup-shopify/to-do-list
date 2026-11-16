@@ -94,7 +94,12 @@ Pull ClickUp tickets assigned to you into a list, on demand (one-way).
    count as open, and the target list (defaults to a list named "First Day").
 4. Hit **⟳ ClickUp** at the top of that list. New tickets are added (tagged
    `clickup`, with the ticket link in the notes); tickets that have left those
-   statuses get checked off. Nothing is written back to ClickUp.
+   statuses get checked off.
+
+ClickUp tasks (marked **CU**) are read-only here: title, notes, checkbox and
+delete are locked. Their details panel has one write-back button, **Mark DONE
+(THIS SPRINT)**, which sets the ticket's status in ClickUp and checks it off.
+The status it sets is configurable in the same settings section.
 
 ## Local development
 

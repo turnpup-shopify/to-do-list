@@ -123,6 +123,14 @@ export function SettingsMenu({
             />
           </label>
           <label className="field">
+            <span className="field__label">"Mark done" sets status to</span>
+            <input
+              type="text"
+              value={clickup.doneStatus}
+              onChange={(e) => onUpdateClickUp({ doneStatus: e.target.value })}
+            />
+          </label>
+          <label className="field">
             <span className="field__label">Add to list</span>
             <select
               value={clickupListId ?? ""}

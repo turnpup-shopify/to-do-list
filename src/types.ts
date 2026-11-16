@@ -51,6 +51,8 @@ export interface ClickUpSettings {
   statuses: string[];
   /** List that new tickets land in. Null falls back to a list named "First Day". */
   listId: string | null;
+  /** Status the "mark done" button sets in ClickUp. */
+  doneStatus: string;
 }
 
 /** User-adjustable app settings. */
@@ -75,6 +77,7 @@ export const defaultClickUpSettings = (): ClickUpSettings => ({
   view: "https://app.clickup.com/18042215/v/b/h6kb7-32211",
   statuses: ["To Do", "In-Progress", "VQA", "QA", "READY FOR DEPLOY"],
   listId: null,
+  doneStatus: "DONE (THIS SPRINT)",
 });
 
 export const emptySettings = (): Settings => ({

@@ -17,6 +17,9 @@ interface Props {
   onMove?: (taskId: string, newListId: string) => void;
   /** When provided, the detail panel shows a "Launch" selector to link this task. */
   monthlyItems?: MonthlyItem[];
+  /** For ClickUp tasks: sets the ticket's status in ClickUp. Rejects with a readable error. */
+  onClickUpDone?: (id: string) => Promise<void>;
+  clickupDoneStatus?: string;
   // Pointer-based drag-and-drop reordering — optional (omitted in the breakout).
   isDragging?: boolean;
   isDragOver?: boolean;
@@ -36,6 +39,8 @@ export function TaskRow({
   currentListId,
   onMove,
   monthlyItems,
+  onClickUpDone,
+  clickupDoneStatus = "done",
   isDragging = false,
   isDragOver = false,
   onDragStart,
@@ -47,6 +52,26 @@ export function TaskRow({
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   // Raw tag text is edited locally and parsed into clean tags on blur.
   const [tagText, setTagText] = useState(task.tags.join(", "));
+  const [clickupBusy, setClickupBusy] = useState(false);
+  const [clickupError, setClickupError] = useState<string | null>(null);
+
+  // ClickUp tasks are owned by ClickUp: title, notes, completion and deletion
+  // are locked here and only change via sync or the "mark done" write-back.
+  const fromClickUp = !!task.clickupId;
+
+  const markDone = async () => {
+    if (!onClickUpDone) return;
+    if (!confirm(`Set "${task.title}" to ${clickupDoneStatus} in ClickUp?`)) return;
+    setClickupBusy(true);
+    setClickupError(null);
+    try {
+      await onClickUpDone(task.id);
+    } catch (err) {
+      setClickupError(err instanceof Error ? err.message : "ClickUp update failed.");
+    } finally {
+      setClickupBusy(false);
+    }
+  };
 
   const draggable = !!onDragStart;
   const canMove = !!onMove && !!lists && !!currentListId;
@@ -109,6 +134,7 @@ export function TaskRow({
   const className = [
     "task",
     task.completed ? "task--done" : "",
+    fromClickUp ? "task--clickup" : "",
     isDragging ? "task--dragging" : "",
     isDragOver ? "task--dragover" : "",
   ]
@@ -153,6 +179,8 @@ export function TaskRow({
           className="task__check"
           checked={task.completed}
           onChange={() => onToggle(task.id)}
+          disabled={fromClickUp}
+          title={fromClickUp ? "Done in ClickUp — use the button in the details" : undefined}
           aria-label={task.completed ? "Mark as not done" : "Mark as done"}
         />
         <button
@@ -164,6 +192,11 @@ export function TaskRow({
           onContextMenu={(e) => e.preventDefault()}
           aria-expanded={expanded}
         >
+          {fromClickUp && (
+            <span className="task__cu" title="From ClickUp">
+              CU
+            </span>
+          )}
           <span className="task__title-text">{task.title}</span>
           {task.tags.length > 0 && (
             <span className="task__tags">
@@ -213,14 +246,32 @@ export function TaskRow({
 
       {expanded && (
         <div className="task__details">
-          <label className="field">
-            <span className="field__label">Title</span>
-            <input
-              type="text"
-              value={task.title}
-              onChange={(e) => onUpdate(task.id, { title: e.target.value })}
-            />
-          </label>
+          {fromClickUp ? (
+            <div className="cu-panel">
+              <span className="field__label">From ClickUp · read-only</span>
+              <p className="cu-panel__title">{task.title}</p>
+              {task.description.trim() && (
+                <a className="cu-panel__link" href={task.description.trim()} target="_blank" rel="noreferrer">
+                  Open in ClickUp ↗
+                </a>
+              )}
+              {onClickUpDone && !task.completed && (
+                <button type="button" className="btn btn--primary" onClick={markDone} disabled={clickupBusy}>
+                  {clickupBusy ? "Updating ClickUp…" : `✓ Mark ${clickupDoneStatus}`}
+                </button>
+              )}
+              {clickupError && <p className="cu-panel__error">{clickupError}</p>}
+            </div>
+          ) : (
+            <label className="field">
+              <span className="field__label">Title</span>
+              <input
+                type="text"
+                value={task.title}
+                onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+              />
+            </label>
+          )}
 
           <label className="field">
             <span className="field__label">Due date</span>
@@ -231,19 +282,23 @@ export function TaskRow({
             />
           </label>
 
-          <label className="field">
-            <span className="field__label">Description</span>
-            <textarea
-              rows={3}
-              placeholder="Notes, links…"
-              value={task.description}
-              onChange={(e) => onUpdate(task.id, { description: e.target.value })}
-            />
-          </label>
-          {task.description.trim() && (
-            <div className="task__preview">
-              <Linkify text={task.description} />
-            </div>
+          {!fromClickUp && (
+            <>
+              <label className="field">
+                <span className="field__label">Description</span>
+                <textarea
+                  rows={3}
+                  placeholder="Notes, links…"
+                  value={task.description}
+                  onChange={(e) => onUpdate(task.id, { description: e.target.value })}
+                />
+              </label>
+              {task.description.trim() && (
+                <div className="task__preview">
+                  <Linkify text={task.description} />
+                </div>
+              )}
+            </>
           )}
 
           <label className="field">
@@ -302,11 +357,13 @@ export function TaskRow({
             </div>
           </dl>
 
-          <div className="task__actions">
-            <button type="button" className="btn btn--danger" onClick={() => onDelete(task.id)}>
-              Delete task
-            </button>
-          </div>
+          {!fromClickUp && (
+            <div className="task__actions">
+              <button type="button" className="btn btn--danger" onClick={() => onDelete(task.id)}>
+                Delete task
+              </button>
+            </div>
+          )}
         </div>
       )}
     </li>
