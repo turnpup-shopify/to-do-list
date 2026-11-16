@@ -20,6 +20,10 @@ interface Props {
   /** For ClickUp tasks: sets the ticket's status in ClickUp. Rejects with a readable error. */
   onClickUpDone?: (id: string) => Promise<void>;
   clickupDoneStatus?: string;
+  /** Select mode: rows toggle selection instead of completing/expanding. */
+  selectMode?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string, range: boolean) => void;
   // Pointer-based drag-and-drop reordering — optional (omitted in the breakout).
   isDragging?: boolean;
   isDragOver?: boolean;
@@ -41,6 +45,9 @@ export function TaskRow({
   monthlyItems,
   onClickUpDone,
   clickupDoneStatus = "done",
+  selectMode = false,
+  selected = false,
+  onSelect,
   isDragging = false,
   isDragOver = false,
   onDragStart,
@@ -135,6 +142,8 @@ export function TaskRow({
     "task",
     task.completed ? "task--done" : "",
     fromClickUp ? "task--clickup" : "",
+    selectMode ? "task--selectable" : "",
+    selected ? "task--selected" : "",
     isDragging ? "task--dragging" : "",
     isDragOver ? "task--dragover" : "",
   ]
@@ -144,7 +153,12 @@ export function TaskRow({
   return (
     <li className={className} data-task-id={task.id}>
       <div className="task__row">
-        {draggable && (
+        {selectMode && (
+          <span className="task__sel" aria-hidden>
+            {selected ? "✓" : ""}
+          </span>
+        )}
+        {draggable && !selectMode && (
           <span
             className="task__grip"
             role="button"
@@ -174,23 +188,32 @@ export function TaskRow({
             ⠿
           </span>
         )}
-        <input
-          type="checkbox"
-          className="task__check"
-          checked={task.completed}
-          onChange={() => onToggle(task.id)}
-          disabled={fromClickUp}
-          title={fromClickUp ? "Done in ClickUp — use the button in the details" : undefined}
-          aria-label={task.completed ? "Mark as not done" : "Mark as done"}
-        />
+        {!selectMode && (
+          <input
+            type="checkbox"
+            className="task__check"
+            checked={task.completed}
+            onChange={() => onToggle(task.id)}
+            disabled={fromClickUp}
+            title={fromClickUp ? "Done in ClickUp — use the button in the details" : undefined}
+            aria-label={task.completed ? "Mark as not done" : "Mark as done"}
+          />
+        )}
         <button
           type="button"
           className="task__title"
-          onPointerDown={handleTitlePointerDown}
-          onPointerUp={handleTitlePointerUp}
-          onPointerLeave={clearLongPress}
+          {...(selectMode
+            ? {
+                onClick: (e: React.MouseEvent) => onSelect?.(task.id, e.shiftKey),
+                "aria-pressed": selected,
+              }
+            : {
+                onPointerDown: handleTitlePointerDown,
+                onPointerUp: handleTitlePointerUp,
+                onPointerLeave: clearLongPress,
+                "aria-expanded": expanded,
+              })}
           onContextMenu={(e) => e.preventDefault()}
-          aria-expanded={expanded}
         >
           {fromClickUp && (
             <span className="task__cu" title="From ClickUp">
@@ -244,19 +267,29 @@ export function TaskRow({
         </div>
       )}
 
-      {expanded && (
+      {expanded && !selectMode && (
         <div className="task__details">
           {fromClickUp ? (
             <div className="cu-panel">
               <span className="field__label">From ClickUp · read-only</span>
               <p className="cu-panel__title">{task.title}</p>
               {task.description.trim() && (
-                <a className="cu-panel__link" href={task.description.trim()} target="_blank" rel="noreferrer">
+                <a
+                  className="cu-panel__link"
+                  href={task.description.trim()}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Open in ClickUp ↗
                 </a>
               )}
               {onClickUpDone && !task.completed && (
-                <button type="button" className="btn btn--primary" onClick={markDone} disabled={clickupBusy}>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={markDone}
+                  disabled={clickupBusy}
+                >
                   {clickupBusy ? "Updating ClickUp…" : `✓ Mark ${clickupDoneStatus}`}
                 </button>
               )}

@@ -162,6 +162,31 @@ export function deleteTask(data: AppData, taskId: string): AppData {
   return { ...data, tasks: data.tasks.filter((t) => t.id !== taskId) };
 }
 
+/** Check off several tasks at once (already-done ones are left as they are). */
+export function completeTasks(data: AppData, ids: string[], now: number = Date.now()): AppData {
+  const set = new Set(ids);
+  const stamp = new Date(now).toISOString();
+  return {
+    ...data,
+    tasks: data.tasks.map((t) =>
+      set.has(t.id) && !t.completed ? { ...t, completed: true, completedAt: stamp } : t,
+    ),
+  };
+}
+
+export function deleteTasks(data: AppData, ids: string[]): AppData {
+  const set = new Set(ids);
+  return { ...data, tasks: data.tasks.filter((t) => !set.has(t.id)) };
+}
+
+export function moveTasks(data: AppData, ids: string[], newListId: string): AppData {
+  const set = new Set(ids);
+  return {
+    ...data,
+    tasks: data.tasks.map((t) => (set.has(t.id) ? { ...t, listId: newListId } : t)),
+  };
+}
+
 /** Move a task to a different list. */
 export function moveTask(data: AppData, taskId: string, newListId: string): AppData {
   return {

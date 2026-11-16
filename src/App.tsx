@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "./lib/useStore";
-import { HttpRepository, UnauthorizedError, verifyPassphrase, type Repository } from "./lib/repository";
+import {
+  HttpRepository,
+  UnauthorizedError,
+  verifyPassphrase,
+  type Repository,
+} from "./lib/repository";
 import { clickupListId, collectTags, syncClickUp } from "./lib/operations";
 import { fetchClickUpTickets, setClickUpStatus } from "./lib/clickup";
 import { Sidebar } from "./components/Sidebar";
@@ -8,6 +13,7 @@ import { TaskRow } from "./components/TaskRow";
 import { CompletedView } from "./components/CompletedView";
 import { TimelineView } from "./components/TimelineView";
 import { SettingsMenu } from "./components/SettingsMenu";
+import { SelectionBar } from "./components/SelectionBar";
 import { PassphraseGate } from "./components/PassphraseGate";
 import { PASSPHRASE_KEY } from "./lib/auth";
 
@@ -66,9 +72,7 @@ export default function App() {
     return <PassphraseGate onAuthenticated={authenticate} />;
   }
 
-  return (
-    <TodoApp repository={repository} onSignOut={signOut} canSignOut={passphrase !== ""} />
-  );
+  return <TodoApp repository={repository} onSignOut={signOut} canSignOut={passphrase !== ""} />;
 }
 
 function TodoApp({
@@ -81,7 +85,9 @@ function TodoApp({
   canSignOut: boolean;
 }) {
   // A rejected passphrase (e.g. changed on the server) drops back to the gate.
-  const { data, loaded, error, actions } = useStore(repository, { onUnauthorized: onSignOut });
+  const { data, loaded, error, actions } = useStore(repository, {
+    onUnauthorized: onSignOut,
+  });
 
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState("");
@@ -92,6 +98,11 @@ function TodoApp({
   const [view, setView] = useState<"list" | "completed" | "timeline">("list");
   const [clickupBusy, setClickupBusy] = useState(false);
   const [clickupMsg, setClickupMsg] = useState<string | null>(null);
+
+  // Select mode: rows toggle selection; bulk actions live in the SelectionBar.
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectAnchor = useRef<string | null>(null);
 
   // Drag-and-drop reordering state.
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -185,7 +196,61 @@ function TodoApp({
       if (err instanceof UnauthorizedError) onSignOut();
       throw err;
     }
-    if (!task.completed) actions.toggleTask(task.id);
+    actions.completeTasks([task.id]);
+  };
+
+  const exitSelect = () => {
+    setSelecting(false);
+    setSelectedIds([]);
+    selectAnchor.current = null;
+  };
+
+  // Leaving the list (or the list view) ends select mode.
+  useEffect(exitSelect, [activeListId, view]);
+
+  useEffect(() => {
+    if (!selecting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") exitSelect();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selecting]);
+
+  const selectTask = (id: string, range: boolean) => {
+    const ids = visibleTasks.map((t) => t.id);
+    const from = selectAnchor.current ? ids.indexOf(selectAnchor.current) : -1;
+    const to = ids.indexOf(id);
+    if (range && from !== -1 && to !== -1) {
+      const span = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
+      setSelectedIds((sel) => [...new Set([...sel, ...span])]);
+    } else {
+      setSelectedIds((sel) => (sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]));
+    }
+    selectAnchor.current = id;
+  };
+
+  // Bulk write-back, one ticket at a time so one failure doesn't sink the rest.
+  const bulkClickUpDone = async (ids: string[]) => {
+    const passphrase = localStorage.getItem(PASSPHRASE_KEY) ?? "";
+    const status = data.settings.clickup.doneStatus;
+    const done: string[] = [];
+    const failed: string[] = [];
+    for (const task of data.tasks.filter((t) => ids.includes(t.id) && t.clickupId)) {
+      try {
+        await setClickUpStatus(task.clickupId!, status, passphrase);
+        done.push(task.id);
+      } catch (err) {
+        if (err instanceof UnauthorizedError) {
+          onSignOut();
+          break;
+        }
+        failed.push(`${task.title}: ${err instanceof Error ? err.message : "failed"}`);
+      }
+    }
+    actions.completeTasks(done);
+    setSelectedIds((sel) => sel.filter((id) => !done.includes(id)));
+    return { done, failed };
   };
 
   const handleDrop = () => {
@@ -267,12 +332,29 @@ function TodoApp({
               <button type="button" className="btn btn--ghost" onClick={removeActiveList}>
                 Delete list
               </button>
+              <button
+                type="button"
+                className={`btn ${selecting ? "btn--select-on" : ""}`}
+                onClick={() => (selecting ? exitSelect() : setSelecting(true))}
+                aria-pressed={selecting}
+              >
+                {selecting ? "Cancel" : "Select"}
+              </button>
               {activeList.id === clickupTarget && (
-                <button type="button" className="btn" onClick={runClickUpSync} disabled={clickupBusy}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={runClickUpSync}
+                  disabled={clickupBusy}
+                >
                   {clickupBusy ? "Syncing…" : "⟳ ClickUp"}
                 </button>
               )}
-              <button type="button" className="btn btn--primary" onClick={() => setView("timeline")}>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => setView("timeline")}
+              >
                 🗓 Timeline
               </button>
             </header>
@@ -335,6 +417,9 @@ function TodoApp({
                     onMove={actions.moveTask}
                     clickupDoneStatus={data.settings.clickup.doneStatus}
                     onClickUpDone={markClickUpDone}
+                    selectMode={selecting}
+                    selected={selectedIds.includes(task.id)}
+                    onSelect={selectTask}
                     isDragging={draggedId === task.id}
                     isDragOver={dragOverId === task.id && draggedId !== task.id}
                     onDragStart={setDraggedId}
@@ -346,8 +431,36 @@ function TodoApp({
               </ul>
             ) : (
               <p className="empty">
-                {listTasks.length === 0 ? "No tasks yet — add one above." : "Nothing matches the current filter."}
+                {listTasks.length === 0
+                  ? "No tasks yet — add one above."
+                  : "Nothing matches the current filter."}
               </p>
+            )}
+
+            {selecting && (
+              <SelectionBar
+                selected={visibleTasks.filter((t) => selectedIds.includes(t.id))}
+                totalVisible={visibleTasks.length}
+                lists={data.lists}
+                currentListId={activeList.id}
+                clickupDoneStatus={data.settings.clickup.doneStatus}
+                onSelectAll={() => setSelectedIds(visibleTasks.map((t) => t.id))}
+                onClear={() => setSelectedIds([])}
+                onExit={exitSelect}
+                onComplete={(ids) => {
+                  actions.completeTasks(ids);
+                  setSelectedIds((sel) => sel.filter((id) => !ids.includes(id)));
+                }}
+                onDelete={(ids) => {
+                  actions.deleteTasks(ids);
+                  setSelectedIds((sel) => sel.filter((id) => !ids.includes(id)));
+                }}
+                onMove={(ids, listId) => {
+                  actions.moveTasks(ids, listId);
+                  exitSelect();
+                }}
+                onClickUpDone={bulkClickUpDone}
+              />
             )}
           </>
         ) : (

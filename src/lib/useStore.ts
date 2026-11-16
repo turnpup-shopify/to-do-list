@@ -77,6 +77,9 @@ export function useStore(repository: Repository, opts: Options = {}) {
       toggleTask: (id: string) => setData((d) => ops.toggleTask(d, id)),
       deleteTask: (id: string) => setData((d) => ops.deleteTask(d, id)),
       moveTask: (id: string, listId: string) => setData((d) => ops.moveTask(d, id, listId)),
+      completeTasks: (ids: string[]) => setData((d) => ops.completeTasks(d, ids)),
+      deleteTasks: (ids: string[]) => setData((d) => ops.deleteTasks(d, ids)),
+      moveTasks: (ids: string[], listId: string) => setData((d) => ops.moveTasks(d, ids, listId)),
       reorderTasks: (draggedId: string, targetId: string) =>
         setData((d) => ops.reorderTasks(d, draggedId, targetId)),
       addDefaultTag: (tag: string) => setData((d) => ops.addDefaultTag(d, tag)),
