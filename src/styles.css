@@ -781,6 +781,22 @@ textarea:focus {
   font-size: 18px;
 }
 
+.panel__section--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.panel__section--stack .panel__hint {
+  margin: 0;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .panel__section h3 {
   margin: 0 0 4px;
   font-size: 14px;
@@ -927,7 +943,8 @@ textarea:focus {
 }
 
 .mi__detail select,
-.task__details select {
+.task__details select,
+.panel__section select {
   padding: 8px 10px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);

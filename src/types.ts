@@ -19,6 +19,8 @@ export interface Task {
   dueDate: string | null;
   /** Optional parent monthly item (launch) this task is a sub-item of. */
   monthlyItemId: string | null;
+  /** ClickUp task id when this task was pulled in from ClickUp. */
+  clickupId?: string;
 }
 
 export interface List {
@@ -41,10 +43,21 @@ export interface MonthlyItem {
   createdAt: string;
 }
 
+/** Where and what to pull from ClickUp (one-way, on demand). */
+export interface ClickUpSettings {
+  /** ClickUp view link (or bare view id) to pull tickets from. */
+  view: string;
+  /** Statuses that count as open; matched ignoring case and punctuation. */
+  statuses: string[];
+  /** List that new tickets land in. Null falls back to a list named "First Day". */
+  listId: string | null;
+}
+
 /** User-adjustable app settings. */
 export interface Settings {
   /** Suggested tags offered when tagging tasks; editable from the menu. */
   defaultTags: string[];
+  clickup: ClickUpSettings;
 }
 
 /** The complete, serializable application state. */
@@ -58,7 +71,16 @@ export interface AppData {
 /** Tags seeded on first run; fully editable afterwards. */
 export const SEED_DEFAULT_TAGS = ["work", "personal", "urgent", "errand", "idea"];
 
-export const emptySettings = (): Settings => ({ defaultTags: [...SEED_DEFAULT_TAGS] });
+export const defaultClickUpSettings = (): ClickUpSettings => ({
+  view: "https://app.clickup.com/18042215/v/b/h6kb7-32211",
+  statuses: ["To Do", "In-Progress", "VQA", "QA", "READY FOR DEPLOY"],
+  listId: null,
+});
+
+export const emptySettings = (): Settings => ({
+  defaultTags: [...SEED_DEFAULT_TAGS],
+  clickup: defaultClickUpSettings(),
+});
 
 export const emptyAppData = (): AppData => ({
   lists: [],

@@ -84,6 +84,18 @@ site, tap Share → **Add to Home Screen**, then enable reminders from that icon
 > are last-write-wins, which is fine for a single user editing one device at a
 > time.
 
+### ClickUp pull — optional
+
+Pull ClickUp tickets assigned to you into a list, on demand (one-way).
+
+1. In ClickUp, go to **Settings → Apps** and generate a personal API token (`pk_…`).
+2. Add it as `CLICKUP_TOKEN` in Vercel's environment variables and **redeploy**.
+3. In the app, open ☰ → ⚙ → **ClickUp** to set the view link, the statuses that
+   count as open, and the target list (defaults to a list named "First Day").
+4. Hit **⟳ ClickUp** at the top of that list. New tickets are added (tagged
+   `clickup`, with the ticket link in the notes); tickets that have left those
+   statuses get checked off. Nothing is written back to ClickUp.
+
 ## Local development
 
 ```bash

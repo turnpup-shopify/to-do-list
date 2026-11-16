@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./lib/useStore";
-import { HttpRepository, verifyPassphrase, type Repository } from "./lib/repository";
-import { collectTags } from "./lib/operations";
+import { HttpRepository, UnauthorizedError, verifyPassphrase, type Repository } from "./lib/repository";
+import { clickupListId, collectTags, syncClickUp } from "./lib/operations";
+import { fetchClickUpTickets } from "./lib/clickup";
 import { Sidebar } from "./components/Sidebar";
 import { TaskRow } from "./components/TaskRow";
 import { CompletedView } from "./components/CompletedView";
@@ -89,6 +90,8 @@ function TodoApp({
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile lists drawer
   const [view, setView] = useState<"list" | "completed" | "timeline">("list");
+  const [clickupBusy, setClickupBusy] = useState(false);
+  const [clickupMsg, setClickupMsg] = useState<string | null>(null);
 
   // Drag-and-drop reordering state.
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -144,6 +147,30 @@ function TodoApp({
     if (!activeList) return;
     if (confirm(`Delete list "${activeList.name}" and all its tasks?`)) {
       actions.deleteList(activeList.id);
+    }
+  };
+
+  const clickupTarget = clickupListId(data);
+
+  const runClickUpSync = async () => {
+    if (!clickupTarget) return;
+    setClickupBusy(true);
+    setClickupMsg(null);
+    try {
+      const passphrase = localStorage.getItem(PASSPHRASE_KEY) ?? "";
+      const { tickets, complete } = await fetchClickUpTickets(data.settings.clickup, passphrase);
+      const { added, closed } = syncClickUp(data, clickupTarget, tickets, complete);
+      actions.syncClickUp(clickupTarget, tickets, complete);
+      setClickupMsg(
+        added || closed
+          ? `ClickUp: ${added} new, ${closed} checked off.`
+          : `ClickUp: up to date (${tickets.length} open ticket${tickets.length === 1 ? "" : "s"}).`,
+      );
+    } catch (err) {
+      if (err instanceof UnauthorizedError) return onSignOut();
+      setClickupMsg(err instanceof Error ? err.message : "ClickUp sync failed.");
+    } finally {
+      setClickupBusy(false);
     }
   };
 
@@ -226,10 +253,21 @@ function TodoApp({
               <button type="button" className="btn btn--ghost" onClick={removeActiveList}>
                 Delete list
               </button>
+              {activeList.id === clickupTarget && (
+                <button type="button" className="btn" onClick={runClickUpSync} disabled={clickupBusy}>
+                  {clickupBusy ? "Syncing…" : "⟳ ClickUp"}
+                </button>
+              )}
               <button type="button" className="btn btn--primary" onClick={() => setView("timeline")}>
                 🗓 Timeline
               </button>
             </header>
+
+            {clickupMsg && activeList.id === clickupTarget && (
+              <div className="banner" onClick={() => setClickupMsg(null)}>
+                {clickupMsg}
+              </div>
+            )}
 
             <form className="add-task" onSubmit={addTask}>
               <input
@@ -306,6 +344,10 @@ function TodoApp({
       <SettingsMenu
         open={menuOpen}
         defaultTags={data.settings.defaultTags}
+        clickup={data.settings.clickup}
+        clickupListId={clickupTarget}
+        lists={data.lists}
+        onUpdateClickUp={actions.updateClickUpSettings}
         onAdd={(tag) => actions.addDefaultTag(tag)}
         onRemove={(tag) => actions.removeDefaultTag(tag)}
         onClose={() => setMenuOpen(false)}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AppData, MonthlyItem, Task } from "../types";
+import type { AppData, ClickUpSettings, MonthlyItem, Task } from "../types";
 import { emptyAppData } from "../types";
 import { UnauthorizedError, type Repository } from "./repository";
 import * as ops from "./operations";
@@ -86,6 +86,10 @@ export function useStore(repository: Repository, opts: Options = {}) {
       updateMonthlyItem: (id: string, patch: Partial<Omit<MonthlyItem, "id" | "createdAt">>) =>
         setData((d) => ops.updateMonthlyItem(d, id, patch)),
       deleteMonthlyItem: (id: string) => setData((d) => ops.deleteMonthlyItem(d, id)),
+      updateClickUpSettings: (patch: Partial<ClickUpSettings>) =>
+        setData((d) => ops.updateClickUpSettings(d, patch)),
+      syncClickUp: (listId: string, tickets: ops.ClickUpTicket[], closeMissing: boolean) =>
+        setData((d) => ops.syncClickUp(d, listId, tickets, closeMissing).data),
     }),
     [],
   );

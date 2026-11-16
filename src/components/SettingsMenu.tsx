@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { ClickUpSettings, List } from "../types";
 import { RemindersToggle } from "./RemindersToggle";
 
 interface Props {
@@ -6,6 +7,11 @@ interface Props {
   defaultTags: string[];
   onAdd: (tag: string) => void;
   onRemove: (tag: string) => void;
+  clickup: ClickUpSettings;
+  /** The list ClickUp tickets currently land in (resolved, may be the fallback). */
+  clickupListId: string | null;
+  lists: List[];
+  onUpdateClickUp: (patch: Partial<ClickUpSettings>) => void;
   onClose: () => void;
   onSignOut: () => void;
   /** Hidden when the deployment has no passphrase (nothing to sign out of). */
@@ -18,11 +24,18 @@ export function SettingsMenu({
   defaultTags,
   onAdd,
   onRemove,
+  clickup,
+  clickupListId,
+  lists,
+  onUpdateClickUp,
   onClose,
   onSignOut,
   canSignOut,
 }: Props) {
   const [draft, setDraft] = useState("");
+  // Statuses are edited as text and committed on blur, so typing commas works.
+  const [statusDraft, setStatusDraft] = useState(clickup.statuses.join(", "));
+  useEffect(() => setStatusDraft(clickup.statuses.join(", ")), [clickup.statuses]);
 
   if (!open) return null;
 
@@ -80,6 +93,49 @@ export function SettingsMenu({
               Add
             </button>
           </form>
+        </section>
+
+        <section className="panel__section panel__section--stack">
+          <h3>ClickUp</h3>
+          <p className="panel__hint">
+            Pulls tickets assigned to you in these statuses into a list with the ⟳ ClickUp button.
+            Tickets that leave them get checked off.
+          </p>
+          <label className="field">
+            <span className="field__label">View link</span>
+            <input
+              type="text"
+              value={clickup.view}
+              onChange={(e) => onUpdateClickUp({ view: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">Statuses (comma-separated)</span>
+            <input
+              type="text"
+              value={statusDraft}
+              onChange={(e) => setStatusDraft(e.target.value)}
+              onBlur={() =>
+                onUpdateClickUp({
+                  statuses: statusDraft.split(",").map((s) => s.trim()).filter(Boolean),
+                })
+              }
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">Add to list</span>
+            <select
+              value={clickupListId ?? ""}
+              onChange={(e) => onUpdateClickUp({ listId: e.target.value || null })}
+            >
+              {!clickupListId && <option value="">— pick a list —</option>}
+              {lists.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </section>
 
         <RemindersToggle />

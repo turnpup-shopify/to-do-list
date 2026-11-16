@@ -1,5 +1,5 @@
 import type { AppData, Task } from "../types";
-import { emptyAppData, emptySettings } from "../types";
+import { defaultClickUpSettings, emptyAppData, emptySettings } from "../types";
 
 // A tiny persistence contract. Everything above this line (types, store, UI)
 // is decoupled from *how* data is stored. To move between storage backends —
@@ -30,9 +30,13 @@ export function normalizeAppData(parsed: Partial<AppData> | null | undefined): A
   return {
     lists: Array.isArray(parsed.lists) ? parsed.lists : [],
     tasks,
-    settings: parsed.settings?.defaultTags
-      ? { defaultTags: parsed.settings.defaultTags }
-      : emptySettings(),
+    settings: {
+      ...emptySettings(),
+      ...(parsed.settings?.defaultTags ? { defaultTags: parsed.settings.defaultTags } : {}),
+      ...(parsed.settings?.clickup
+        ? { clickup: { ...defaultClickUpSettings(), ...parsed.settings.clickup } }
+        : {}),
+    },
     monthlyItems: Array.isArray(parsed.monthlyItems) ? parsed.monthlyItems : [],
   };
 }

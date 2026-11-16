@@ -1,4 +1,4 @@
-import type { AppData, List, MonthlyItem, Task } from "../types";
+import type { AppData, ClickUpSettings, List, MonthlyItem, Task } from "../types";
 
 // Pure, side-effect-free helpers that transform AppData. Keeping mutations here
 // (rather than inside React components) makes the behaviour easy to test and to
@@ -215,4 +215,71 @@ export function deleteMonthlyItem(data: AppData, id: string): AppData {
     monthlyItems: data.monthlyItems.filter((m) => m.id !== id),
     tasks: data.tasks.map((t) => (t.monthlyItemId === id ? { ...t, monthlyItemId: null } : t)),
   };
+}
+
+// ---------- ClickUp (one-way pull) ----------
+
+export interface ClickUpTicket {
+  id: string;
+  name: string;
+  status: string;
+  url: string;
+}
+
+/** The list ClickUp tickets land in: the configured one, else "First Day". */
+export function clickupListId(data: AppData): string | null {
+  const { listId } = data.settings.clickup;
+  if (listId && data.lists.some((l) => l.id === listId)) return listId;
+  return data.lists.find((l) => l.name.trim().toLowerCase() === "first day")?.id ?? null;
+}
+
+export function updateClickUpSettings(data: AppData, patch: Partial<ClickUpSettings>): AppData {
+  return {
+    ...data,
+    settings: { ...data.settings, clickup: { ...data.settings.clickup, ...patch } },
+  };
+}
+
+/**
+ * Merge a fresh ClickUp pull into the data: tickets not seen before become
+ * tasks in `listId`; open tasks whose ticket is no longer in the pull (left
+ * the wanted statuses, closed, or unassigned) get checked off. Existing tasks
+ * are matched by ClickUp id in any list, so moving one elsewhere is fine.
+ * Pass `closeMissing: false` when the pull may be partial.
+ */
+export function syncClickUp(
+  data: AppData,
+  listId: string,
+  tickets: ClickUpTicket[],
+  closeMissing = true,
+  now: number = Date.now(),
+): { data: AppData; added: number; closed: number } {
+  const active = new Set(tickets.map((t) => t.id));
+  const known = new Set(data.tasks.map((t) => t.clickupId).filter(Boolean));
+  const stamp = new Date(now).toISOString();
+
+  let closed = 0;
+  const tasks = data.tasks.map((t) => {
+    if (!closeMissing || !t.clickupId || t.completed || active.has(t.clickupId)) return t;
+    closed++;
+    return { ...t, completed: true, completedAt: stamp };
+  });
+
+  const fresh: Task[] = tickets
+    .filter((tk) => !known.has(tk.id))
+    .map((tk) => ({
+      id: newId(),
+      listId,
+      title: tk.name,
+      description: tk.url,
+      tags: ["clickup"],
+      completed: false,
+      createdAt: stamp,
+      completedAt: null,
+      dueDate: null,
+      monthlyItemId: null,
+      clickupId: tk.id,
+    }));
+
+  return { data: { ...data, tasks: [...fresh, ...tasks] }, added: fresh.length, closed };
 }
